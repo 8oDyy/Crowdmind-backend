@@ -1,11 +1,21 @@
-from fastapi import FastAPI
-app = FastAPI(title="Crowmind API")
+from fastapi import FastAPI, WebSocket
 
-@app.get("/")
-def read_root():
-    return {"message": "Crowmind Backend FastAPI ready!"}
+app = FastAPI(
+    title="CrowdMind API",
+    version="1.0",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
+)
 
-@app.get("/health")
+@app.get("/api/health")
 def health():
-    return {"status": "healthy"}
+    return {"status": "ok"}
 
+@app.websocket("/ws/live")
+async def ws_live(ws: WebSocket):
+    await ws.accept()
+    await ws.send_text("ws connected")
+    while True:
+        msg = await ws.receive_text()
+        await ws.send_text(f"echo: {msg}")
