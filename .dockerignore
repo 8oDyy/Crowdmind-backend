@@ -1,0 +1,9 @@
+.git
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+certs
+.env
+.env.*
+node_modules
