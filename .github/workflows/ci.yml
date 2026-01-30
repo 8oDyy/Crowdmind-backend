@@ -1,11 +1,15 @@
 name: CI - Build & Push to GHCR
 
 on:
+  pull_request:
+    branches: ["dev", "main"]
   push:
     branches: ["dev", "main"]
 
 jobs:
   docker:
+    needs: test
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: read
