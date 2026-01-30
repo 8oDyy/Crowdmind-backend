@@ -1,9 +1,10 @@
-name: CI
+name: CI - Build & Push to GHCR
 
 on:
   pull_request:
+    branches: ["dev", "main"]
   push:
-    branches: ["main", "dev"]
+    branches: ["dev", "main"]
 
 jobs:
   test:
@@ -20,7 +21,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install ruff pytest
+          pip install ruff
 
       - name: Lint
         run: ruff check .
@@ -35,30 +36,25 @@ jobs:
     permissions:
       contents: read
       packages: write
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Login GHCR
+      - name: Set lowercase owner
+        id: owner
+        run: echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_OUTPUT
+
+      - name: Login to GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
+          username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Tags
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository }}-api
-          tags: |
-            type=raw,value=prod-${{ github.sha }},enable=${{ github.ref_name == 'main' }}
-            type=raw,value=staging-${{ github.sha }},enable=${{ github.ref_name == 'dev' }}
-            type=raw,value=latest,enable=${{ github.ref_name == 'main' }}
-
-      - name: Build & push
+      - name: Build and push image
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: |
+            ghcr.io/${{ steps.owner.outputs.owner }}/crowdmind-backend-api:${{ github.ref_name == 'main' && 'latest' || 'staging-latest' }}
