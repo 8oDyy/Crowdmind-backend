@@ -10,7 +10,7 @@ app = FastAPI(
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "Tout va bien"}
 
 @app.websocket("/ws/live")
 async def ws_live(ws: WebSocket):
