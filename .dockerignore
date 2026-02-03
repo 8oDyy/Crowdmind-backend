@@ -6,7 +6,5 @@ __pycache__
 certs
 .env
 .env.*
-venv
-.venv
-.pytest_cache
-.idea
+node_modules
+.dfdsqf
