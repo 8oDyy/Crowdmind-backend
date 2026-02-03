@@ -1,0 +1,36 @@
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: crowdmind_nginx
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    restart: unless-stopped
+
+  api:
+    build: .
+    container_name: crowdmind_api
+    environment:
+      - ENV=dev
+      - REDIS_URL=redis://redis:6379/0
+    expose:
+      - "8000"
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: crowdmind_redis
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  redis_data:
