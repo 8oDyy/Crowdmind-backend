@@ -57,4 +57,5 @@ jobs:
           context: .
           push: true
           tags: |
+            ghcr.io/${{ steps.owner.outputs.owner }}/crowdmind-backend-api:${{ github.ref_name }}-${{ github.sha }}
             ghcr.io/${{ steps.owner.outputs.owner }}/crowdmind-backend-api:${{ github.ref_name == 'main' && 'latest' || 'staging-latest' }}
