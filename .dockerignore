@@ -1,12 +1,81 @@
+# Git
 .git
-__pycache__
-*.pyc
-*.pyo
-*.pyd
-certs
+.gitignore
+
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+wheels/
+
+# Environments
 .env
 .env.*
-venv
-.venv
-.pytest_cache
-.idea
+!.env.example
+.venv/
+venv/
+ENV/
+env/
+
+# Secrets / Certificates
+certs/
+*.pem
+*.key
+*.crt
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Tests
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Type checkers / Linters
+.mypy_cache/
+.ruff_cache/
+.pyre/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Database
+*.db
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Docker (avoid recursive copy)
+Dockerfile
+docker-compose*.yml
+.docker/
+.dockerignore
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Misc
+*.local
+Makefile
+*.sh
