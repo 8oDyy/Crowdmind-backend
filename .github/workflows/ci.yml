@@ -51,11 +51,21 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Compute tags
+        id: meta
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "channel=prod" >> $GITHUB_OUTPUT
+          else
+            echo "channel=staging" >> $GITHUB_OUTPUT
+          fi
+          echo "sha=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
       - name: Build and push image
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ steps.owner.outputs.owner }}/crowdmind-backend-api:${{ github.ref_name }}-${{ github.sha }}
-            ghcr.io/${{ steps.owner.outputs.owner }}/crowdmind-backend-api:${{ github.ref_name == 'main' && 'latest' || 'staging-latest' }}
+            ghcr.io/${{ steps.owner.outputs.owner }}/crowdmind-backend-api:${{ steps.meta.outputs.channel }}-latest
+            ghcr.io/${{ steps.owner.outputs.owner }}/crowdmind-backend-api:${{ steps.meta.outputs.channel }}-${{ steps.meta.outputs.sha }}
