@@ -101,6 +101,8 @@ logs/
 
 # Docker
 .docker/
+docker-compose.override.yml
+docker-compose.local.yml
 
 # OS files
 .DS_Store
