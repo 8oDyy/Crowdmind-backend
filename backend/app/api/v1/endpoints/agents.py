@@ -1,9 +1,9 @@
 from fastapi import APIRouter
 
 from app.api.v1.schemas.agent import (
+    AgentAssignModelResponse,
     AgentCreate,
     AgentResponse,
-    AgentAssignModelResponse,
 )
 from app.core.dependencies import AgentServiceDep
 

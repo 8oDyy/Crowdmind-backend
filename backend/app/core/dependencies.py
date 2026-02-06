@@ -6,18 +6,17 @@ from app.core.config import Settings, get_settings
 from app.infrastructure.db.supabase_client import SupabaseClient, get_supabase_client
 from app.infrastructure.storage.storage_client import StorageClient
 from app.infrastructure.storage.supabase_storage import get_storage_client
-from app.repositories.dataset_repo import DatasetRepository
-from app.repositories.model_repo import ModelRepository
 from app.repositories.agent_repo import AgentRepository
+from app.repositories.dataset_repo import DatasetRepository
 from app.repositories.experiment_repo import ExperimentRepository
+from app.repositories.model_repo import ModelRepository
 from app.repositories.reaction_repo import ReactionRepository
-from app.services.dataset_service import DatasetService
-from app.services.model_service import ModelService
 from app.services.agent_service import AgentService
+from app.services.dataset_service import DatasetService
 from app.services.experiment_service import ExperimentService
+from app.services.model_service import ModelService
 from app.services.reaction_service import ReactionService
 from app.services.realtime_service import RealtimeService
-
 
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 SupabaseDep = Annotated[SupabaseClient, Depends(get_supabase_client)]
