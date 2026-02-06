@@ -4,25 +4,23 @@ from typing import Any
 from pydantic import Field
 
 from app.api.v1.schemas.common import BaseSchema
-from app.domain.enums.common import ExperimentStatus
 
 
 class ExperimentCreate(BaseSchema):
-    name: str = Field(..., min_length=1, max_length=255)
-    scenario: dict[str, Any] | None = None
+    title: str = Field(..., min_length=1, max_length=255)
+    message: str = Field(..., min_length=1)
+    mode: str = Field(..., pattern="^(polling|ab_test|free)$")
+    created_by: str = Field(..., min_length=1)
+    description: str | None = None
+    parameters: dict[str, Any] | None = None
 
 
 class ExperimentResponse(BaseSchema):
     id: str
-    name: str
-    status: ExperimentStatus
-    scenario: dict[str, Any] | None = None
-    started_at: datetime | None = None
-    ended_at: datetime | None = None
-    created_at: datetime
-
-
-class ExperimentStatusResponse(BaseSchema):
-    id: str
-    status: ExperimentStatus
+    title: str
     message: str
+    mode: str
+    created_by: str
+    description: str | None = None
+    parameters: dict[str, Any] | None = None
+    created_at: datetime

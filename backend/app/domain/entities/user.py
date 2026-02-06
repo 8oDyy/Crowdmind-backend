@@ -1,12 +1,10 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
 
 
 @dataclass
-class Agent:
+class User:
     id: str
-    label: str
-    demographics: dict[str, Any] | None = None
-    traits: dict[str, Any] | None = None
+    email: str
+    role: str
     created_at: datetime = field(default_factory=datetime.utcnow)

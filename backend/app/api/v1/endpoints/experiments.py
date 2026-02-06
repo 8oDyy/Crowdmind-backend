@@ -1,9 +1,10 @@
-from fastapi import APIRouter
+from typing import Annotated
+
+from fastapi import APIRouter, Query
 
 from app.api.v1.schemas.experiment import (
     ExperimentCreate,
     ExperimentResponse,
-    ExperimentStatusResponse,
 )
 from app.core.dependencies import ExperimentServiceDep
 
@@ -16,43 +17,22 @@ async def create_experiment(
     service: ExperimentServiceDep,
 ) -> ExperimentResponse:
     experiment = service.create_experiment(
-        name=body.name,
-        scenario=body.scenario,
+        title=body.title,
+        message=body.message,
+        mode=body.mode,
+        created_by=body.created_by,
+        description=body.description,
+        parameters=body.parameters,
     )
     return ExperimentResponse(
         id=experiment.id,
-        name=experiment.name,
-        status=experiment.status,
-        scenario=experiment.scenario,
-        started_at=experiment.started_at,
-        ended_at=experiment.ended_at,
+        title=experiment.title,
+        message=experiment.message,
+        mode=experiment.mode,
+        created_by=experiment.created_by,
+        description=experiment.description,
+        parameters=experiment.parameters,
         created_at=experiment.created_at,
-    )
-
-
-@router.post("/{experiment_id}/start", response_model=ExperimentStatusResponse)
-async def start_experiment(
-    experiment_id: str,
-    service: ExperimentServiceDep,
-) -> ExperimentStatusResponse:
-    experiment = service.start_experiment(experiment_id)
-    return ExperimentStatusResponse(
-        id=experiment.id,
-        status=experiment.status,
-        message="Experiment started",
-    )
-
-
-@router.post("/{experiment_id}/stop", response_model=ExperimentStatusResponse)
-async def stop_experiment(
-    experiment_id: str,
-    service: ExperimentServiceDep,
-) -> ExperimentStatusResponse:
-    experiment = service.stop_experiment(experiment_id)
-    return ExperimentStatusResponse(
-        id=experiment.id,
-        status=experiment.status,
-        message="Experiment stopped",
     )
 
 
@@ -64,10 +44,33 @@ async def get_experiment(
     experiment = service.get_experiment(experiment_id)
     return ExperimentResponse(
         id=experiment.id,
-        name=experiment.name,
-        status=experiment.status,
-        scenario=experiment.scenario,
-        started_at=experiment.started_at,
-        ended_at=experiment.ended_at,
+        title=experiment.title,
+        message=experiment.message,
+        mode=experiment.mode,
+        created_by=experiment.created_by,
+        description=experiment.description,
+        parameters=experiment.parameters,
         created_at=experiment.created_at,
     )
+
+
+@router.get("", response_model=list[ExperimentResponse])
+async def list_experiments(
+    service: ExperimentServiceDep,
+    limit: Annotated[int, Query(ge=1, le=100)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> list[ExperimentResponse]:
+    experiments = service.list_experiments(limit=limit, offset=offset)
+    return [
+        ExperimentResponse(
+            id=e.id,
+            title=e.title,
+            message=e.message,
+            mode=e.mode,
+            created_by=e.created_by,
+            description=e.description,
+            parameters=e.parameters,
+            created_at=e.created_at,
+        )
+        for e in experiments
+    ]

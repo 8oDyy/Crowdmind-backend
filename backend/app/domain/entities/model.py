@@ -6,10 +6,17 @@ from datetime import datetime
 class Model:
     id: str
     name: str
+    framework: str
+    description: str | None = None
+    created_at: datetime = field(default_factory=datetime.utcnow)
+
+
+@dataclass
+class ModelVersion:
+    id: str
+    model_id: str
     version: str
-    target_device: str | None = None
-    labels: list[str] | None = None
-    storage_path: str | None = None
-    checksum: str | None = None
-    size: int | None = None
+    file_path: str
+    checksum: str
+    size_kb: int
     created_at: datetime = field(default_factory=datetime.utcnow)
