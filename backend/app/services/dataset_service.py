@@ -1,4 +1,5 @@
-import json
+import csv
+import io
 import random
 from typing import Any
 
@@ -105,41 +106,41 @@ class DatasetService:
             Faker.seed(seed)
             random.seed(seed)
 
-        labels = labels or ["positive", "negative", "neutral"]
-        rows: list[dict[str, Any]] = []
+        labels = labels or ["class_0", "class_1", "class_2"]
+        num_features = 5
+        feature_names = [f"feature_{i}" for i in range(1, num_features + 1)]
 
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(feature_names + ["label"])
+
+        labels_data = []
         for _ in range(n):
-            row = {
-                "text": fake.sentence(nb_words=random.randint(5, 20)),
-                "user_id": fake.uuid4(),
-                "timestamp": fake.iso8601(),
-                "source": random.choice(["web", "mobile", "api"]),
-                "label": random.choice(labels),
-                "metadata": {
-                    "ip": fake.ipv4(),
-                    "user_agent": fake.user_agent(),
-                    "generated": True,
-                    "seed": seed,
-                },
-            }
-            rows.append(row)
+            row = [fake.pyfloat(min_value=-3.0, max_value=3.0) for _ in range(num_features)]
+            label = random.choice(labels)
+            labels_data.append(label)
+            row.append(label)
+            writer.writerow(row)
 
-        content = "\n".join(json.dumps(row) for row in rows).encode("utf-8")
-        label_dist = {
-            label: sum(1 for r in rows if r["label"] == label)
-            for label in labels
+        content = output.getvalue().encode("utf-8")
+
+        label_dist = {label: labels_data.count(label) for label in labels}
+        stats = {
+            "row_count": n,
+            "num_features": num_features,
+            "label_distribution": label_dist,
         }
-        stats = {"row_count": n, "label_distribution": label_dist}
 
         return self.create_version(
             dataset_id=dataset_id,
             version=version,
             file_bytes=content,
-            format="json",
-            content_type="application/json",
+            format="csv",
+            content_type="text/csv",
             schema={
-                "features": ["text", "user_id", "timestamp", "source", "metadata"],
-                "label": "label",
+                "features": feature_names,
+                "label_column": "label",
+                "labels": labels,
             },
             stats=stats,
         )
