@@ -1,4 +1,3 @@
-import hashlib
 
 from app.core.config import Settings
 from app.core.errors import ValidationError
@@ -48,7 +47,6 @@ class ModelService:
                 f"File too large. Max size: {self._settings.MAX_UPLOAD_MB}MB"
             )
 
-        checksum = hashlib.sha256(file_bytes).hexdigest()
         path = f"models/{model_id}/{model.version}.tflite"
 
         meta = self._storage.upload_bytes(

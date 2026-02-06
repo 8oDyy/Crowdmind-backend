@@ -39,7 +39,7 @@ class DatasetService:
         seed: int | None = None,
     ) -> int:
         dataset = self._repo.get_dataset(dataset_id)
-        
+
         fake = Faker()
         if seed is not None:
             Faker.seed(seed)

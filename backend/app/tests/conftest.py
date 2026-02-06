@@ -14,8 +14,6 @@ from app.domain.entities.dataset import Dataset, DatasetRow
 from app.domain.entities.model import Model
 from app.infrastructure.storage.storage_client import StorageClient, StorageObjectMeta
 from app.main import app
-from app.repositories.dataset_repo import DatasetRepository
-from app.repositories.model_repo import ModelRepository
 
 
 class FakeDatasetRepository:

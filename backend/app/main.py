@@ -9,10 +9,10 @@ from app.core.config import get_settings
 from app.core.errors import (
     AppError,
     app_error_handler,
-    http_exception_handler,
     generic_exception_handler,
+    http_exception_handler,
 )
-from app.core.logging import setup_logging, get_logger
+from app.core.logging import get_logger, setup_logging
 
 logger = get_logger(__name__)
 

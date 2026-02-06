@@ -1,11 +1,11 @@
 from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
-    health,
-    datasets,
-    models,
     agents,
+    datasets,
     experiments,
+    health,
+    models,
     reactions,
     websocket,
 )
