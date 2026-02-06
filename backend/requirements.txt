@@ -5,6 +5,7 @@ pydantic-settings>=2.1.0
 supabase>=2.3.0
 faker>=22.0.0
 python-multipart>=0.0.6
+ollama>=0.1.0
 
 # Dev dependencies
 pytest>=7.4.0

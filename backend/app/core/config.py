@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "*"
     LOG_LEVEL: str = "INFO"
 
+    OLLAMA_HOST: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "qwen2.5:latest"
+
     @property
     def cors_origins_list(self) -> list[str]:
         if self.CORS_ORIGINS == "*":

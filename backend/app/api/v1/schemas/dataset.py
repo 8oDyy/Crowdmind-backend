@@ -50,11 +50,32 @@ class DatasetVersionUploadResponse(BaseSchema):
     size_kb: int
 
 
-class GenerateSyntheticRequest(BaseSchema):
+class ArchetypeDefinition(BaseSchema):
+    name: str = Field(..., min_length=1, max_length=100, description="Nom de l'archétype")
+    description: str = Field(
+        ...,
+        min_length=10,
+        max_length=500,
+        description="Description de l'archétype pour guider la génération",
+    )
+
+
+class GenerateArchetypeRequest(BaseSchema):
     version: str = Field(..., min_length=1, max_length=50)
-    n: int = Field(default=100, ge=1, le=10000)
+    archetype_1: ArchetypeDefinition = Field(
+        ...,
+        description="Premier archétype avec son nom et sa description",
+    )
+    archetype_2: ArchetypeDefinition = Field(
+        ...,
+        description="Deuxième archétype avec son nom et sa description",
+    )
+    n_per_archetype: int = Field(default=5000, ge=100, le=50000)
     seed: int | None = None
-    labels: list[str] | None = None
+    topics: list[str] | None = Field(
+        default=None,
+        description="Sujets optionnels pour varier les opinions générées",
+    )
 
 
 class DatasetVersionDownloadResponse(BaseSchema):
