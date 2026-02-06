@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     API_PREFIX: str = "/api/v1"
 
     SUPABASE_URL: str = ""
-    SUPABASE_KEY: str = ""
+    SUPABASE_SERVICE_ROLE_KEY: str = ""
     SUPABASE_SCHEMA: str = "public"
     SUPABASE_STORAGE_BUCKET: str = "models"
 

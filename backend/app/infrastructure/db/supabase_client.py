@@ -110,7 +110,7 @@ def get_supabase_client() -> SupabaseClient:
         settings = get_settings()
         _supabase_client = SupabaseClient(
             url=settings.SUPABASE_URL,
-            key=settings.SUPABASE_KEY,
+            key=settings.SUPABASE_SERVICE_ROLE_KEY,
             schema=settings.SUPABASE_SCHEMA,
         )
     return _supabase_client

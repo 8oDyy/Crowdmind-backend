@@ -78,7 +78,7 @@ def get_storage_client() -> StorageClient:
         settings = get_settings()
         _storage_client = SupabaseStorageClient(
             url=settings.SUPABASE_URL,
-            key=settings.SUPABASE_KEY,
+            key=settings.SUPABASE_SERVICE_ROLE_KEY,
             bucket=settings.SUPABASE_STORAGE_BUCKET,
         )
     return _storage_client
