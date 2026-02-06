@@ -3,7 +3,7 @@
 API FastAPI pour la gestion de modèles ML, datasets synthétiques et expériences.
 
 > **Note** : Cette API ne fait **pas** d'entraînement ML. Elle sert de hub pour :
-> - Générer et stocker des datasets synthétiques
+> - Génférer et stocker des datasets synthétiques
 > - Recevoir des modèles `.tflite` entraînés externement
 > - Servir les modèles via URL signée
 > - Gérer des expériences et diffuser les réactions en temps réel (WebSocket)
