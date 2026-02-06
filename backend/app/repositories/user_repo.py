@@ -3,42 +3,43 @@ from typing import Any
 from uuid import uuid4
 
 from app.core.errors import NotFoundError, RepoError
-from app.domain.entities.agent import Agent
+from app.domain.entities.user import User
 from app.infrastructure.db.supabase_client import SupabaseClient
 
 
-class AgentRepository:
-    TABLE = "agents"
+class UserRepository:
+    TABLE = "users"
 
     def __init__(self, db: SupabaseClient):
         self._db = db
 
-    def create_agent(
+    def create_user(
         self,
-        label: str,
-        demographics: dict[str, Any] | None = None,
-        traits: dict[str, Any] | None = None,
-    ) -> Agent:
+        email: str,
+        role: str,
+    ) -> User:
         data = {
             "id": str(uuid4()),
-            "label": label,
-            "demographics": demographics,
-            "traits": traits,
+            "email": email,
+            "role": role,
             "created_at": datetime.utcnow().isoformat(),
         }
         result = self._db.insert(self.TABLE, data)
         if not result:
-            raise RepoError("Failed to create agent")
-        return self._to_agent(result[0])
+            raise RepoError("Failed to create user")
+        return self._to_user(result[0])
 
-    def get_agent(self, agent_id: str) -> Agent:
-        row = self._db.select_one(self.TABLE, filters={"id": agent_id})
+    def get_user(self, user_id: str) -> User:
+        row = self._db.select_one(self.TABLE, filters={"id": user_id})
         if not row:
-            raise NotFoundError(f"Agent {agent_id} not found")
-        return self._to_agent(row)
+            raise NotFoundError(f"User {user_id} not found")
+        return self._to_user(row)
 
+    def get_user_by_email(self, email: str) -> User | None:
+        row = self._db.select_one(self.TABLE, filters={"email": email})
+        return self._to_user(row) if row else None
 
-    def list_agents(self, limit: int = 100, offset: int = 0) -> list[Agent]:
+    def list_users(self, limit: int = 100, offset: int = 0) -> list[User]:
         rows = self._db.select(
             self.TABLE,
             limit=limit,
@@ -46,14 +47,13 @@ class AgentRepository:
             order_by="created_at",
             order_desc=True,
         )
-        return [self._to_agent(r) for r in rows]
+        return [self._to_user(r) for r in rows]
 
-    def _to_agent(self, row: dict[str, Any]) -> Agent:
-        return Agent(
+    def _to_user(self, row: dict[str, Any]) -> User:
+        return User(
             id=row["id"],
-            label=row["label"],
-            demographics=row.get("demographics"),
-            traits=row.get("traits"),
+            email=row["email"],
+            role=row["role"],
             created_at=self._parse_datetime(row.get("created_at")),
         )
 

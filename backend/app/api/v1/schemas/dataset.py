@@ -8,28 +8,54 @@ from app.api.v1.schemas.common import BaseSchema
 
 class DatasetCreate(BaseSchema):
     name: str = Field(..., min_length=1, max_length=255)
-    version: str = Field(default="1.0", max_length=50)
-    labels: list[str] | None = None
-    schema_def: dict[str, Any] | None = Field(default=None, alias="schema")
+    dataset_type: str = Field(..., pattern="^(synthetic|scraped|mixed)$")
+    created_by: str = Field(..., min_length=1)
+    description: str | None = None
 
 
 class DatasetResponse(BaseSchema):
     id: str
     name: str
-    version: str
-    schema_def: dict[str, Any] | None = Field(default=None, serialization_alias="schema")
-    labels: list[str] | None = None
+    dataset_type: str
+    created_by: str
+    description: str | None = None
     created_at: datetime
 
 
-class GenerateRowsResponse(BaseSchema):
-    inserted: int
+class DatasetVersionCreate(BaseSchema):
+    version: str = Field(..., min_length=1, max_length=50)
+    format: str = Field(..., pattern="^(csv|json|parquet|zip)$")
 
 
-class DatasetRowResponse(BaseSchema):
+class DatasetVersionResponse(BaseSchema):
     id: str
     dataset_id: str
-    input_data: dict[str, Any]
-    label: str
-    meta: dict[str, Any] | None = None
+    version: str
+    file_path: str
+    format: str
+    checksum: str
+    size_kb: int
+    schema: dict[str, Any] | None = None
+    stats: dict[str, Any] | None = None
     created_at: datetime
+
+
+class DatasetVersionUploadResponse(BaseSchema):
+    id: str
+    dataset_id: str
+    version: str
+    file_path: str
+    format: str
+    checksum: str
+    size_kb: int
+
+
+class GenerateSyntheticRequest(BaseSchema):
+    version: str = Field(..., min_length=1, max_length=50)
+    n: int = Field(default=100, ge=1, le=10000)
+    seed: int | None = None
+    labels: list[str] | None = None
+
+
+class DatasetVersionDownloadResponse(BaseSchema):
+    url: str

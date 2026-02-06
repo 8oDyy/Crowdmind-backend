@@ -17,17 +17,23 @@ async def create_reaction(
     body: ReactionCreate,
     service: ReactionServiceDep,
 ) -> ReactionResponse:
-    reaction = await service.create_reaction(
+    agent_reaction = await service.create_reaction(
         experiment_id=body.experiment_id,
         agent_id=body.agent_id,
-        payload=body.payload,
+        reaction=body.reaction,
+        emotion=body.emotion,
+        score=body.score,
+        raw_data=body.raw_data,
     )
     return ReactionResponse(
-        id=reaction.id,
-        experiment_id=reaction.experiment_id,
-        agent_id=reaction.agent_id,
-        payload=reaction.payload,
-        created_at=reaction.created_at,
+        id=agent_reaction.id,
+        experiment_id=agent_reaction.experiment_id,
+        agent_id=agent_reaction.agent_id,
+        reaction=agent_reaction.reaction,
+        emotion=agent_reaction.emotion,
+        score=agent_reaction.score,
+        raw_data=agent_reaction.raw_data,
+        created_at=agent_reaction.created_at,
     )
 
 
@@ -49,7 +55,10 @@ async def list_reactions(
                 id=r.id,
                 experiment_id=r.experiment_id,
                 agent_id=r.agent_id,
-                payload=r.payload,
+                reaction=r.reaction,
+                emotion=r.emotion,
+                score=r.score,
+                raw_data=r.raw_data,
                 created_at=r.created_at,
             )
             for r in reactions

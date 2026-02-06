@@ -3,12 +3,12 @@ from typing import Any
 from uuid import uuid4
 
 from app.core.errors import RepoError
-from app.domain.entities.reaction import Reaction
+from app.domain.entities.reaction import AgentReaction
 from app.infrastructure.db.supabase_client import SupabaseClient
 
 
 class ReactionRepository:
-    TABLE = "reactions"
+    TABLE = "agent_reactions"
 
     def __init__(self, db: SupabaseClient):
         self._db = db
@@ -17,13 +17,19 @@ class ReactionRepository:
         self,
         experiment_id: str,
         agent_id: str,
-        payload: dict[str, Any],
-    ) -> Reaction:
+        reaction: str,
+        emotion: str,
+        score: float | None = None,
+        raw_data: dict[str, Any] | None = None,
+    ) -> AgentReaction:
         data = {
             "id": str(uuid4()),
             "experiment_id": experiment_id,
             "agent_id": agent_id,
-            "payload": payload,
+            "reaction": reaction,
+            "emotion": emotion,
+            "score": score,
+            "raw_data": raw_data,
             "created_at": datetime.utcnow().isoformat(),
         }
         result = self._db.insert(self.TABLE, data)
@@ -36,7 +42,7 @@ class ReactionRepository:
         experiment_id: str,
         limit: int = 100,
         offset: int = 0,
-    ) -> list[Reaction]:
+    ) -> list[AgentReaction]:
         rows = self._db.select(
             self.TABLE,
             filters={"experiment_id": experiment_id},
@@ -47,12 +53,15 @@ class ReactionRepository:
         )
         return [self._to_reaction(r) for r in rows]
 
-    def _to_reaction(self, row: dict[str, Any]) -> Reaction:
-        return Reaction(
+    def _to_reaction(self, row: dict[str, Any]) -> AgentReaction:
+        return AgentReaction(
             id=row["id"],
             experiment_id=row["experiment_id"],
             agent_id=row["agent_id"],
-            payload=row.get("payload", {}),
+            reaction=row["reaction"],
+            emotion=row["emotion"],
+            score=row.get("score"),
+            raw_data=row.get("raw_data"),
             created_at=self._parse_datetime(row.get("created_at")),
         )
 

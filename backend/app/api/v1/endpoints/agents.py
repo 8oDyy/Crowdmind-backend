@@ -1,7 +1,8 @@
-from fastapi import APIRouter
+from typing import Annotated
+
+from fastapi import APIRouter, Query
 
 from app.api.v1.schemas.agent import (
-    AgentAssignModelResponse,
     AgentCreate,
     AgentResponse,
 )
@@ -16,30 +17,16 @@ async def create_agent(
     service: AgentServiceDep,
 ) -> AgentResponse:
     agent = service.create_agent(
-        name=body.name,
-        agent_type=body.type,
+        label=body.label,
+        demographics=body.demographics,
         traits=body.traits,
     )
     return AgentResponse(
         id=agent.id,
-        name=agent.name,
-        type=agent.type,
+        label=agent.label,
+        demographics=agent.demographics,
         traits=agent.traits,
-        current_model_id=agent.current_model_id,
         created_at=agent.created_at,
-    )
-
-
-@router.post("/{agent_id}/assign-model/{model_id}", response_model=AgentAssignModelResponse)
-async def assign_model_to_agent(
-    agent_id: str,
-    model_id: str,
-    service: AgentServiceDep,
-) -> AgentAssignModelResponse:
-    agent = service.assign_model(agent_id=agent_id, model_id=model_id)
-    return AgentAssignModelResponse(
-        agent_id=agent.id,
-        model_id=model_id,
     )
 
 
@@ -51,9 +38,27 @@ async def get_agent(
     agent = service.get_agent(agent_id)
     return AgentResponse(
         id=agent.id,
-        name=agent.name,
-        type=agent.type,
+        label=agent.label,
+        demographics=agent.demographics,
         traits=agent.traits,
-        current_model_id=agent.current_model_id,
         created_at=agent.created_at,
     )
+
+
+@router.get("", response_model=list[AgentResponse])
+async def list_agents(
+    service: AgentServiceDep,
+    limit: Annotated[int, Query(ge=1, le=100)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> list[AgentResponse]:
+    agents = service.list_agents(limit=limit, offset=offset)
+    return [
+        AgentResponse(
+            id=a.id,
+            label=a.label,
+            demographics=a.demographics,
+            traits=a.traits,
+            created_at=a.created_at,
+        )
+        for a in agents
+    ]

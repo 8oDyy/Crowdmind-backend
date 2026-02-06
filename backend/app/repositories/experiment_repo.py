@@ -4,7 +4,6 @@ from uuid import uuid4
 
 from app.core.errors import NotFoundError, RepoError
 from app.domain.entities.experiment import Experiment
-from app.domain.enums.common import ExperimentStatus
 from app.infrastructure.db.supabase_client import SupabaseClient
 
 
@@ -16,14 +15,21 @@ class ExperimentRepository:
 
     def create_experiment(
         self,
-        name: str,
-        scenario: dict[str, Any] | None = None,
+        title: str,
+        message: str,
+        mode: str,
+        created_by: str,
+        description: str | None = None,
+        parameters: dict[str, Any] | None = None,
     ) -> Experiment:
         data = {
             "id": str(uuid4()),
-            "name": name,
-            "status": ExperimentStatus.DRAFT.value,
-            "scenario": scenario,
+            "title": title,
+            "description": description,
+            "message": message,
+            "mode": mode,
+            "parameters": parameters,
+            "created_by": created_by,
             "created_at": datetime.utcnow().isoformat(),
         }
         result = self._db.insert(self.TABLE, data)
@@ -37,25 +43,6 @@ class ExperimentRepository:
             raise NotFoundError(f"Experiment {experiment_id} not found")
         return self._to_experiment(row)
 
-    def set_status(
-        self,
-        experiment_id: str,
-        status: ExperimentStatus,
-    ) -> Experiment:
-        update_data: dict[str, Any] = {"status": status.value}
-        if status == ExperimentStatus.RUNNING:
-            update_data["started_at"] = datetime.utcnow().isoformat()
-        elif status == ExperimentStatus.STOPPED:
-            update_data["ended_at"] = datetime.utcnow().isoformat()
-
-        result = self._db.update(
-            self.TABLE,
-            data=update_data,
-            filters={"id": experiment_id},
-        )
-        if not result:
-            raise NotFoundError(f"Experiment {experiment_id} not found")
-        return self._to_experiment(result[0])
 
     def list_experiments(self, limit: int = 100, offset: int = 0) -> list[Experiment]:
         rows = self._db.select(
@@ -70,11 +57,12 @@ class ExperimentRepository:
     def _to_experiment(self, row: dict[str, Any]) -> Experiment:
         return Experiment(
             id=row["id"],
-            name=row["name"],
-            status=ExperimentStatus(row["status"]),
-            scenario=row.get("scenario"),
-            started_at=self._parse_datetime_opt(row.get("started_at")),
-            ended_at=self._parse_datetime_opt(row.get("ended_at")),
+            title=row["title"],
+            message=row["message"],
+            mode=row["mode"],
+            created_by=row["created_by"],
+            description=row.get("description"),
+            parameters=row.get("parameters"),
             created_at=self._parse_datetime(row.get("created_at")),
         )
 
@@ -85,7 +73,3 @@ class ExperimentRepository:
             return datetime.fromisoformat(value.replace("Z", "+00:00"))
         return datetime.utcnow()
 
-    def _parse_datetime_opt(self, value: Any) -> datetime | None:
-        if value is None:
-            return None
-        return self._parse_datetime(value)

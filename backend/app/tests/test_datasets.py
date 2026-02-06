@@ -6,40 +6,28 @@ def test_create_dataset(client: TestClient) -> None:
         "/api/v1/datasets",
         json={
             "name": "test-dataset",
-            "version": "1.0",
-            "labels": ["positive", "negative"],
+            "dataset_type": "synthetic",
+            "created_by": "user-123",
+            "description": "Test dataset",
         },
     )
     assert response.status_code == 201
     data = response.json()
     assert data["name"] == "test-dataset"
-    assert data["version"] == "1.0"
-    assert data["labels"] == ["positive", "negative"]
+    assert data["dataset_type"] == "synthetic"
+    assert data["created_by"] == "user-123"
     assert "id" in data
     assert "created_at" in data
-
-
-def test_generate_rows(client: TestClient) -> None:
-    create_response = client.post(
-        "/api/v1/datasets",
-        json={"name": "gen-dataset", "labels": ["a", "b", "c"]},
-    )
-    assert create_response.status_code == 201
-    dataset_id = create_response.json()["id"]
-
-    gen_response = client.post(
-        f"/api/v1/datasets/{dataset_id}/generate",
-        params={"n": 10, "seed": 42},
-    )
-    assert gen_response.status_code == 200
-    data = gen_response.json()
-    assert data["inserted"] == 10
 
 
 def test_get_dataset(client: TestClient) -> None:
     create_response = client.post(
         "/api/v1/datasets",
-        json={"name": "get-test", "version": "2.0"},
+        json={
+            "name": "get-test",
+            "dataset_type": "scraped",
+            "created_by": "user-456",
+        },
     )
     assert create_response.status_code == 201
     dataset_id = create_response.json()["id"]
@@ -49,7 +37,7 @@ def test_get_dataset(client: TestClient) -> None:
     data = get_response.json()
     assert data["id"] == dataset_id
     assert data["name"] == "get-test"
-    assert data["version"] == "2.0"
+    assert data["dataset_type"] == "scraped"
 
 
 def test_get_dataset_not_found(client: TestClient) -> None:
@@ -57,18 +45,17 @@ def test_get_dataset_not_found(client: TestClient) -> None:
     assert response.status_code == 404
 
 
-def test_export_dataset_jsonl(client: TestClient) -> None:
-    create_response = client.post(
+def test_list_datasets(client: TestClient) -> None:
+    client.post(
         "/api/v1/datasets",
-        json={"name": "export-test", "labels": ["x", "y"]},
+        json={"name": "dataset-1", "dataset_type": "synthetic", "created_by": "user-1"},
     )
-    dataset_id = create_response.json()["id"]
-
-    client.post(f"/api/v1/datasets/{dataset_id}/generate", params={"n": 5, "seed": 1})
-
-    export_response = client.get(
-        f"/api/v1/datasets/{dataset_id}/export",
-        params={"format": "jsonl"},
+    client.post(
+        "/api/v1/datasets",
+        json={"name": "dataset-2", "dataset_type": "mixed", "created_by": "user-2"},
     )
-    assert export_response.status_code == 200
-    assert "application/x-ndjson" in export_response.headers["content-type"]
+
+    response = client.get("/api/v1/datasets")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 2
