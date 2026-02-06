@@ -8,7 +8,7 @@ from app.api.v1.schemas.dataset import (
     DatasetVersionDownloadResponse,
     DatasetVersionResponse,
     DatasetVersionUploadResponse,
-    GenerateSyntheticRequest,
+    GenerateArchetypeRequest,
 )
 from app.core.dependencies import DatasetServiceDep
 
@@ -103,17 +103,22 @@ async def create_dataset_version(
 
 
 @router.post("/{dataset_id}/generate", response_model=DatasetVersionResponse, status_code=201)
-async def generate_synthetic_version(
+async def generate_archetype_dataset(
     dataset_id: str,
-    body: GenerateSyntheticRequest,
+    body: GenerateArchetypeRequest,
     service: DatasetServiceDep,
 ) -> DatasetVersionResponse:
-    version = service.generate_synthetic_version(
+    """Génère un dataset d'entraînement pour les 2 archétypes spécifiés."""
+    version = service.generate_archetype_dataset(
         dataset_id=dataset_id,
         version=body.version,
-        n=body.n,
+        archetype_1_name=body.archetype_1.name,
+        archetype_1_description=body.archetype_1.description,
+        archetype_2_name=body.archetype_2.name,
+        archetype_2_description=body.archetype_2.description,
+        n_per_archetype=body.n_per_archetype,
         seed=body.seed,
-        labels=body.labels,
+        topics=body.topics,
     )
     return DatasetVersionResponse(
         id=version.id,
