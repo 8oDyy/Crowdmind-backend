@@ -125,10 +125,11 @@ class DatasetService:
             rows.append(row)
 
         content = "\n".join(json.dumps(row) for row in rows).encode("utf-8")
-        stats = {
-            "row_count": n,
-            "label_distribution": {label: sum(1 for r in rows if r["label"] == label) for label in labels},
+        label_dist = {
+            label: sum(1 for r in rows if r["label"] == label)
+            for label in labels
         }
+        stats = {"row_count": n, "label_distribution": label_dist}
 
         return self.create_version(
             dataset_id=dataset_id,
@@ -136,7 +137,10 @@ class DatasetService:
             file_bytes=content,
             format="json",
             content_type="application/json",
-            schema={"features": ["text", "user_id", "timestamp", "source", "metadata"], "label": "label"},
+            schema={
+                "features": ["text", "user_id", "timestamp", "source", "metadata"],
+                "label": "label",
+            },
             stats=stats,
         )
 

@@ -48,7 +48,7 @@ class DeviceRepository:
         data: dict[str, Any] = {"status": status}
         if last_seen:
             data["last_seen"] = last_seen.isoformat()
-        
+
         result = self._db.update(
             self.TABLE,
             data=data,

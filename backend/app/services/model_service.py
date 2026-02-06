@@ -44,7 +44,7 @@ class ModelService:
         file_bytes: bytes,
         content_type: str = "application/octet-stream",
     ) -> ModelVersion:
-        model = self._model_repo.get_model(model_id)
+        self._model_repo.get_model(model_id)
 
         if len(file_bytes) > self._settings.max_upload_bytes:
             raise ValidationError(

@@ -5,7 +5,6 @@ from fastapi import APIRouter, File, Query, UploadFile
 from app.api.v1.schemas.model import (
     ModelCreate,
     ModelResponse,
-    ModelVersionCreate,
     ModelVersionDownloadResponse,
     ModelVersionResponse,
     ModelVersionUploadResponse,

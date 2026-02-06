@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any
 
-from app.core.errors import NotFoundError, RepoError
+from app.core.errors import RepoError
 from app.domain.entities.experiment_metrics import ExperimentMetrics
 from app.infrastructure.db.supabase_client import SupabaseClient
 
@@ -34,7 +34,7 @@ class ExperimentMetricsRepository:
             )
         else:
             result = self._db.insert(self.TABLE, data)
-        
+
         if not result:
             raise RepoError("Failed to save experiment metrics")
         return self._to_metrics(result[0])

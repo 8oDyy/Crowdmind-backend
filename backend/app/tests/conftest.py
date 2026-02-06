@@ -349,7 +349,7 @@ def client(
     fake_storage: FakeStorageClient,
 ) -> TestClient:
     from app.core.dependencies import get_dataset_version_repo, get_model_version_repo
-    
+
     app.dependency_overrides[get_dataset_repo] = lambda: fake_dataset_repo
     app.dependency_overrides[get_dataset_version_repo] = lambda: fake_dataset_version_repo
     app.dependency_overrides[get_model_repo] = lambda: fake_model_repo
