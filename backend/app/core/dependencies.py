@@ -19,6 +19,7 @@ SupabaseDep = Annotated[SupabaseClient, Depends(get_supabase_client)]
 
 # ── Repositories ─────────────────────────────────────────
 
+
 def get_survey_repo(db: SupabaseDep) -> SurveyRepository:
     return SurveyRepository(db)
 
@@ -48,7 +49,10 @@ AgentRepoDep = Annotated[AgentRepository, Depends(get_agent_repo)]
 ResponseRepoDep = Annotated[ResponseRepository, Depends(get_response_repo)]
 AggregateRepoDep = Annotated[SurveyAggregateRepository, Depends(get_survey_aggregate_repo)]
 QuestionRepoDep = Annotated[SurveyQuestionRepository, Depends(get_survey_question_repo)]
-QuestionResponseRepoDep = Annotated[SurveyQuestionResponseRepository, Depends(get_survey_question_response_repo)]
+QuestionResponseRepoDep = Annotated[
+    SurveyQuestionResponseRepository,
+    Depends(get_survey_question_response_repo),
+]
 
 
 # ── Realtime ─────────────────────────────────────────────
@@ -67,6 +71,7 @@ RealtimeServiceDep = Annotated[RealtimeService, Depends(get_realtime_service)]
 
 
 # ── Services ─────────────────────────────────────────────
+
 
 def get_survey_service(
     survey_repo: SurveyRepoDep,

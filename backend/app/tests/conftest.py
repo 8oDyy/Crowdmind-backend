@@ -21,8 +21,8 @@ from app.domain.entities.survey_question import SurveyQuestion
 from app.domain.entities.survey_question_response import SurveyQuestionResponse
 from app.main import app
 
-
 # ── Fake Repositories ────────────────────────────────────
+
 
 class FakeSurveyRepository:
     def __init__(self):
@@ -38,6 +38,7 @@ class FakeSurveyRepository:
     def get_survey(self, survey_id: str) -> Survey:
         if survey_id not in self._store:
             from app.core.errors import NotFoundError
+
             raise NotFoundError(f"Survey {survey_id} not found")
         return self._to_entity(self._store[survey_id])
 
@@ -45,11 +46,12 @@ class FakeSurveyRepository:
         rows = list(self._store.values())
         if created_by:
             rows = [r for r in rows if r.get("created_by") == created_by]
-        return [self._to_entity(r) for r in rows[offset:offset + limit]]
+        return [self._to_entity(r) for r in rows[offset : offset + limit]]
 
     def update_survey(self, survey_id: str, data: dict) -> Survey:
         if survey_id not in self._store:
             from app.core.errors import NotFoundError
+
             raise NotFoundError(f"Survey {survey_id} not found")
         self._store[survey_id].update(data)
         return self._to_entity(self._store[survey_id])
@@ -59,7 +61,8 @@ class FakeSurveyRepository:
 
     def _to_entity(self, row: dict) -> Survey:
         return Survey(
-            id=row["id"], title=row.get("title", ""),
+            id=row["id"],
+            title=row.get("title", ""),
             mode=row.get("mode", "text"),
             input_text=row.get("input_text"),
             status=row.get("status", "pending"),
@@ -87,18 +90,22 @@ class FakeAgentRepository:
 
     def list_agents_by_survey(self, survey_id: str, limit=1000, offset=0) -> list[Agent]:
         rows = [a for a in self._store if a.get("survey_id") == survey_id]
-        return [self._to_entity(r) for r in rows[offset:offset + limit]]
+        return [self._to_entity(r) for r in rows[offset : offset + limit]]
 
     def delete_agents_by_survey(self, survey_id: str) -> None:
         self._store = [a for a in self._store if a.get("survey_id") != survey_id]
 
     def _to_entity(self, row: dict) -> Agent:
         return Agent(
-            id=row["id"], survey_id=row["survey_id"],
+            id=row["id"],
+            survey_id=row["survey_id"],
             agent_index=row.get("agent_index", 0),
-            eco=row.get("eco", 0), open=row.get("open", 0),
-            trust=row.get("trust", 0.5), temperament=row.get("temperament", 0.5),
-            age=row.get("age", 30), education=row.get("education", "bac+3"),
+            eco=row.get("eco", 0),
+            open=row.get("open", 0),
+            trust=row.get("trust", 0.5),
+            temperament=row.get("temperament", 0.5),
+            age=row.get("age", 30),
+            education=row.get("education", "bac+3"),
             urban_rural=row.get("urban_rural", "urbain"),
             classe_sociale=row.get("classe_sociale", "moyenne"),
             background=row.get("background", ""),
@@ -119,15 +126,17 @@ class FakeResponseRepository:
 
     def list_responses_by_survey(self, survey_id: str, limit=1000, offset=0) -> list[Response]:
         rows = [r for r in self._store if r.get("survey_id") == survey_id]
-        return [self._to_entity(r) for r in rows[offset:offset + limit]]
+        return [self._to_entity(r) for r in rows[offset : offset + limit]]
 
     def delete_responses_by_survey(self, survey_id: str) -> None:
         self._store = [r for r in self._store if r.get("survey_id") != survey_id]
 
     def _to_entity(self, row: dict) -> Response:
         return Response(
-            id=row["id"], survey_id=row["survey_id"],
-            agent_id=row["agent_id"], stance=row.get("stance"),
+            id=row["id"],
+            survey_id=row["survey_id"],
+            agent_id=row["agent_id"],
+            stance=row.get("stance"),
             confidence=row.get("confidence", 0.5),
             short_reason=row.get("short_reason"),
             raw_llm_output=row.get("raw_llm_output"),
@@ -140,9 +149,13 @@ class FakeSurveyAggregateRepository:
         self._store: list[dict[str, Any]] = []
 
     def upsert_aggregate(self, survey_id, aggregation, question_id=None) -> SurveyAggregate:
-        row = {"id": str(uuid4()), "survey_id": survey_id,
-               "question_id": question_id, "aggregation": aggregation,
-               "computed_at": datetime.utcnow()}
+        row = {
+            "id": str(uuid4()),
+            "survey_id": survey_id,
+            "question_id": question_id,
+            "aggregation": aggregation,
+            "computed_at": datetime.utcnow(),
+        }
         self._store.append(row)
         return SurveyAggregate(**row)
 
@@ -174,10 +187,13 @@ class FakeSurveyQuestionRepository:
 
     def _to_entity(self, row: dict) -> SurveyQuestion:
         return SurveyQuestion(
-            id=row["id"], survey_id=row["survey_id"],
+            id=row["id"],
+            survey_id=row["survey_id"],
             question_index=row.get("question_index", 0),
-            question_id=row["question_id"], type=row["type"],
-            text=row["text"], choices=row.get("choices"),
+            question_id=row["question_id"],
+            type=row["type"],
+            text=row["text"],
+            choices=row.get("choices"),
             scale=row.get("scale"),
         )
 
@@ -196,11 +212,14 @@ class FakeSurveyQuestionResponseRepository:
 
     def list_by_survey(self, survey_id: str, limit=5000, offset=0) -> list[SurveyQuestionResponse]:
         rows = [r for r in self._store if r.get("survey_id") == survey_id]
-        return [self._to_entity(r) for r in rows[offset:offset + limit]]
+        return [self._to_entity(r) for r in rows[offset : offset + limit]]
 
     def list_by_survey_and_question(self, survey_id, question_id) -> list[SurveyQuestionResponse]:
-        rows = [r for r in self._store
-                if r.get("survey_id") == survey_id and r.get("question_id") == question_id]
+        rows = [
+            r
+            for r in self._store
+            if r.get("survey_id") == survey_id and r.get("question_id") == question_id
+        ]
         return [self._to_entity(r) for r in rows]
 
     def delete_by_survey(self, survey_id: str) -> None:
@@ -208,9 +227,12 @@ class FakeSurveyQuestionResponseRepository:
 
     def _to_entity(self, row: dict) -> SurveyQuestionResponse:
         return SurveyQuestionResponse(
-            id=row["id"], survey_id=row["survey_id"],
-            agent_id=row["agent_id"], question_id=row["question_id"],
-            answer=row["answer"], confidence=row.get("confidence", 0.5),
+            id=row["id"],
+            survey_id=row["survey_id"],
+            agent_id=row["agent_id"],
+            question_id=row["question_id"],
+            answer=row["answer"],
+            confidence=row.get("confidence", 0.5),
             short_reason=row.get("short_reason"),
             raw_llm_output=row.get("raw_llm_output"),
             is_fallback=row.get("is_fallback", False),
@@ -218,6 +240,7 @@ class FakeSurveyQuestionResponseRepository:
 
 
 # ── Fixtures ─────────────────────────────────────────────
+
 
 @pytest.fixture
 def fake_survey_repo():
@@ -263,7 +286,9 @@ def client(
     app.dependency_overrides[get_response_repo] = lambda: fake_response_repo
     app.dependency_overrides[get_survey_aggregate_repo] = lambda: fake_aggregate_repo
     app.dependency_overrides[get_survey_question_repo] = lambda: fake_question_repo
-    app.dependency_overrides[get_survey_question_response_repo] = lambda: fake_question_response_repo
+    app.dependency_overrides[get_survey_question_response_repo] = lambda: (
+        fake_question_response_repo
+    )
 
     with TestClient(app) as c:
         yield c

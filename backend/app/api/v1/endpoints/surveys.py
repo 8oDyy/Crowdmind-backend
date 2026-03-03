@@ -1,6 +1,4 @@
-from typing import Annotated
-
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Query
 
 from app.api.v1.schemas.agent import AgentListResponse, AgentResponse
 from app.api.v1.schemas.response import (
@@ -66,6 +64,7 @@ def delete_survey(survey_id: str, svc: SurveyServiceDep):
 
 # ── Agents ───────────────────────────────────────────────
 
+
 @router.get("/{survey_id}/agents", response_model=AgentListResponse)
 def get_survey_agents(survey_id: str, svc: SurveyServiceDep):
     agents = svc.get_agents(survey_id)
@@ -92,6 +91,7 @@ def get_survey_agents(survey_id: str, svc: SurveyServiceDep):
 
 # ── Questions ────────────────────────────────────────────
 
+
 @router.get("/{survey_id}/questions", response_model=list[SurveyQuestionResponse])
 def get_survey_questions(survey_id: str, svc: SurveyServiceDep):
     questions = svc.get_questions(survey_id)
@@ -111,6 +111,7 @@ def get_survey_questions(survey_id: str, svc: SurveyServiceDep):
 
 
 # ── Responses (mode text) ───────────────────────────────
+
 
 @router.get("/{survey_id}/responses", response_model=ResponseListResponse)
 def get_survey_responses(
@@ -139,6 +140,7 @@ def get_survey_responses(
 
 # ── Question responses (mode questionnaire) ──────────────
 
+
 @router.get(
     "/{survey_id}/question-responses",
     response_model=QuestionResponseListResponse,
@@ -164,6 +166,7 @@ def get_survey_question_responses(survey_id: str, svc: SurveyServiceDep):
 
 
 # ── Aggregates ───────────────────────────────────────────
+
 
 @router.post("/{survey_id}/aggregate", response_model=AggregateListResponse)
 def compute_aggregates(survey_id: str, svc: SurveyServiceDep):
@@ -198,6 +201,7 @@ def get_aggregates(survey_id: str, svc: SurveyServiceDep):
 
 
 # ── Helpers ──────────────────────────────────────────────
+
 
 def _survey_to_response(s) -> SurveyResponse:
     return SurveyResponse(
