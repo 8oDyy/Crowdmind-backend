@@ -3,75 +3,71 @@ from typing import Any
 from uuid import uuid4
 
 from app.core.errors import NotFoundError, RepoError
-from app.domain.entities.agent import Agent
+from app.domain.entities.response import Response
 from app.infrastructure.db.supabase_client import SupabaseClient
 
 
-class AgentRepository:
-    TABLE = "agents"
+class ResponseRepository:
+    TABLE = "responses"
 
     def __init__(self, db: SupabaseClient):
         self._db = db
 
-    def create_agent(self, data: dict[str, Any]) -> Agent:
+    def create_response(self, data: dict[str, Any]) -> Response:
         if "id" not in data:
             data["id"] = str(uuid4())
         if "created_at" not in data:
             data["created_at"] = datetime.utcnow().isoformat()
         result = self._db.insert(self.TABLE, data)
         if not result:
-            raise RepoError("Failed to create agent")
+            raise RepoError("Failed to create response")
         return self._to_entity(result[0])
 
-    def create_agents_batch(self, agents_data: list[dict[str, Any]]) -> list[Agent]:
-        for a in agents_data:
-            if "id" not in a:
-                a["id"] = str(uuid4())
-            if "created_at" not in a:
-                a["created_at"] = datetime.utcnow().isoformat()
-        result = self._db.insert(self.TABLE, agents_data)
+    def create_responses_batch(self, rows: list[dict[str, Any]]) -> list[Response]:
+        for r in rows:
+            if "id" not in r:
+                r["id"] = str(uuid4())
+            if "created_at" not in r:
+                r["created_at"] = datetime.utcnow().isoformat()
+        result = self._db.insert(self.TABLE, rows)
         if not result:
-            raise RepoError("Failed to create agents batch")
+            raise RepoError("Failed to create responses batch")
         return [self._to_entity(r) for r in result]
 
-    def get_agent(self, agent_id: str) -> Agent:
-        row = self._db.select_one(self.TABLE, filters={"id": agent_id})
+    def get_response(self, response_id: str) -> Response:
+        row = self._db.select_one(self.TABLE, filters={"id": response_id})
         if not row:
-            raise NotFoundError(f"Agent {agent_id} not found")
+            raise NotFoundError(f"Response {response_id} not found")
         return self._to_entity(row)
 
-    def list_agents_by_survey(
+    def list_responses_by_survey(
         self,
         survey_id: str,
         limit: int = 1000,
         offset: int = 0,
-    ) -> list[Agent]:
+    ) -> list[Response]:
         rows = self._db.select(
             self.TABLE,
             filters={"survey_id": survey_id},
             limit=limit,
             offset=offset,
-            order_by="agent_index",
+            order_by="created_at",
         )
         return [self._to_entity(r) for r in rows]
 
-    def delete_agents_by_survey(self, survey_id: str) -> None:
+    def delete_responses_by_survey(self, survey_id: str) -> None:
         self._db.delete(self.TABLE, filters={"survey_id": survey_id})
 
-    def _to_entity(self, row: dict[str, Any]) -> Agent:
-        return Agent(
+    def _to_entity(self, row: dict[str, Any]) -> Response:
+        return Response(
             id=row["id"],
             survey_id=row["survey_id"],
-            agent_index=row["agent_index"],
-            eco=float(row["eco"]),
-            open=float(row["open"]),
-            trust=float(row["trust"]),
-            temperament=float(row["temperament"]),
-            age=int(row["age"]),
-            education=row["education"],
-            urban_rural=row["urban_rural"],
-            classe_sociale=row["classe_sociale"],
-            background=row["background"],
+            agent_id=row["agent_id"],
+            stance=row.get("stance"),
+            confidence=float(row.get("confidence", 0.5)),
+            short_reason=row.get("short_reason"),
+            raw_llm_output=row.get("raw_llm_output"),
+            is_fallback=bool(row.get("is_fallback", False)),
             created_at=self._parse_dt(row.get("created_at")) or datetime.utcnow(),
         )
 

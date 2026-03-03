@@ -1,7 +1,7 @@
 [project]
 name = "crowdmind-backend"
-version = "1.0.0"
-description = "CrowdMind API - ML model hub and experiment management"
+version = "2.0.0"
+description = "CrowdMind API - Multi-agent survey simulation platform"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -10,8 +10,9 @@ dependencies = [
     "pydantic>=2.5.0",
     "pydantic-settings>=2.1.0",
     "supabase>=2.3.0",
-    "faker>=22.0.0",
     "python-multipart>=0.0.6",
+    "groq>=0.13.0",
+    "ollama>=0.4.0",
 ]
 
 [project.optional-dependencies]

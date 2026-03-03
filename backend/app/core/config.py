@@ -19,24 +19,21 @@ class Settings(BaseSettings):
     SUPABASE_URL: str = ""
     SUPABASE_SERVICE_ROLE_KEY: str = ""
     SUPABASE_SCHEMA: str = "public"
-    SUPABASE_STORAGE_BUCKET: str = "models"
 
-    MAX_UPLOAD_MB: int = 20
     CORS_ORIGINS: str = "*"
     LOG_LEVEL: str = "INFO"
 
+    GROQ_API_KEY: str = ""
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+
     OLLAMA_HOST: str = "http://localhost:11434"
-    OLLAMA_MODEL: str = "qwen2.5:latest"
+    OLLAMA_MODEL: str = "llama3.2:3b"
 
     @property
     def cors_origins_list(self) -> list[str]:
         if self.CORS_ORIGINS == "*":
             return ["*"]
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
-
-    @property
-    def max_upload_bytes(self) -> int:
-        return self.MAX_UPLOAD_MB * 1024 * 1024
 
 
 @lru_cache

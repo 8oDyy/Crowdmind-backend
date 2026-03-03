@@ -4,7 +4,9 @@ from typing import Any
 
 
 @dataclass
-class ExperimentMetrics:
-    experiment_id: str
-    metrics: dict[str, Any]
+class SurveyAggregate:
+    id: str
+    survey_id: str
+    question_id: str | None = None
+    aggregation: dict[str, Any] = field(default_factory=dict)
     computed_at: datetime = field(default_factory=datetime.utcnow)

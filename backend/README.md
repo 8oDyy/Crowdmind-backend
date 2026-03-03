@@ -1,23 +1,23 @@
-# CrowdMind Backend API
+# CrowdMind Backend API v2
 
-API FastAPI pour la gestion de modèles ML, datasets synthétiques et expériences.
+API FastAPI pour la simulation de sondages multi-agents avec LLM (Groq / Ollama).
 
-> **Note** : Cette API ne fait **pas** d'entraînement ML. Elle sert de hub pour :
-> - Génférer et stocker des datasets synthétiques
-> - Recevoir des modèles `.tflite` entraînés externement
-> - Servir les modèles via URL signée
-> - Gérer des expériences et diffuser les réactions en temps réel (WebSocket)
+> **CrowdMindAvis** simule des panels d'agents idéologiques virtuels qui répondent
+> à des sondages (mode texte ou questionnaire) via un LLM. Le backend stocke les
+> sondages, agents, réponses et agrégations dans Supabase et diffuse les résultats
+> en temps réel via WebSocket.
 
 ## Prérequis
 
 - Python 3.11+
-- Compte Supabase (PostgreSQL + Storage)
+- Compte Supabase (PostgreSQL)
+- Groq API key **ou** Ollama local
 
 ## Installation
 
 ```bash
 cd backend
-pip install -e ".[dev]"
+pip install -r requirements.txt
 ```
 
 ## Configuration
@@ -30,13 +30,17 @@ ENV=dev
 API_PREFIX=/api/v1
 
 SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_KEY=your-service-role-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 SUPABASE_SCHEMA=public
-SUPABASE_STORAGE_BUCKET=models
 
-MAX_UPLOAD_MB=20
 CORS_ORIGINS=*
 LOG_LEVEL=INFO
+
+GROQ_API_KEY=your-groq-key
+GROQ_MODEL=llama-3.3-70b-versatile
+
+OLLAMA_HOST=http://localhost:11434
+OLLAMA_MODEL=llama3.2:3b
 ```
 
 ## Lancement
@@ -57,39 +61,41 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
 ## Endpoints principaux
 
 ### Health
-- `GET /api/v1/health` - Status de l'API
+- `GET /api/v1/health` — Status de l'API
 
-### Datasets
-- `POST /api/v1/datasets` - Créer un dataset
-- `POST /api/v1/datasets/{id}/generate?n=100&seed=42` - Générer des données synthétiques
-- `GET /api/v1/datasets/{id}/export?format=jsonl|csv` - Exporter le dataset
+### Surveys
+- `POST /api/v1/surveys` — Créer un sondage (mode text ou questionnaire)
+- `GET /api/v1/surveys` — Lister les sondages
+- `GET /api/v1/surveys/{id}` — Détails d'un sondage
+- `DELETE /api/v1/surveys/{id}` — Supprimer un sondage
 
-### Models
-- `POST /api/v1/models` - Créer les métadonnées d'un modèle
-- `POST /api/v1/models/{id}/upload` - Upload fichier `.tflite`
-- `GET /api/v1/models/{id}` - Récupérer un modèle
-- `GET /api/v1/models/{id}/download?expires=3600` - URL signée de téléchargement
-
-### Agents
-- `POST /api/v1/agents` - Créer un agent
-- `POST /api/v1/agents/{id}/assign-model/{model_id}` - Assigner un modèle
-
-### Experiments
-- `POST /api/v1/experiments` - Créer une expérience
-- `POST /api/v1/experiments/{id}/start` - Démarrer
-- `POST /api/v1/experiments/{id}/stop` - Arrêter
-
-### Reactions
-- `POST /api/v1/reactions` - Créer une réaction (broadcast WebSocket)
-- `GET /api/v1/experiments/{id}/reactions` - Lister les réactions
+### Survey sub-resources
+- `GET /api/v1/surveys/{id}/agents` — Agents du sondage
+- `GET /api/v1/surveys/{id}/questions` — Questions (mode questionnaire)
+- `GET /api/v1/surveys/{id}/responses` — Réponses (mode text)
+- `GET /api/v1/surveys/{id}/question-responses` — Réponses par question
+- `POST /api/v1/surveys/{id}/aggregate` — Calculer les agrégations
+- `GET /api/v1/surveys/{id}/aggregates` — Récupérer les agrégations
 
 ### WebSocket
-- `WS /api/v1/ws/experiments/{experiment_id}` - Abonnement temps réel
+- `WS /api/v1/ws/experiments/{experiment_id}` — Abonnement temps réel
+
+## Base de données (Supabase)
+
+| Table | Description |
+|---|---|
+| `users` | Utilisateurs (auth) |
+| `surveys` | Sondages avec mode, statut, modèle LLM, paramètres |
+| `agents` | Agents idéologiques (axes eco/open/trust, tempérament, background) |
+| `survey_questions` | Questions du questionnaire (stance/likert/mcq) |
+| `responses` | Réponses mode texte (stance, confidence, short_reason) |
+| `survey_question_responses` | Réponses par question (answer, confidence) |
+| `survey_aggregates` | Métriques agrégées (agree_pct, mean_confidence, …) |
 
 ## Tests
 
 ```bash
-pytest
+PYTHONPATH=. pytest app/tests/ -v
 ```
 
 ## Architecture
@@ -99,18 +105,12 @@ backend/
 ├── app/
 │   ├── main.py                 # Point d'entrée FastAPI
 │   ├── core/                   # Config, logging, errors, dependencies
-│   ├── api/v1/                 # Routers et schemas Pydantic
+│   ├── api/v1/                 # Router et schemas Pydantic
 │   ├── domain/                 # Entités métier et enums
-│   ├── services/               # Logique métier
+│   ├── services/               # Logique métier (SurveyService)
 │   ├── repositories/           # Accès données (Supabase)
-│   ├── infrastructure/         # Clients DB/Storage/Cache
+│   ├── infrastructure/         # Clients DB et LLM (Groq, Ollama)
 │   └── tests/                  # Tests pytest
-├── pyproject.toml
+├── requirements.txt
 └── README.md
 ```
-
-## Notes
-
-- L'entraînement ML est fait par un programme Python externe
-- L'API reçoit les modèles `.tflite` déjà entraînés
-- Le stockage utilise Supabase Storage (swappable vers S3)
