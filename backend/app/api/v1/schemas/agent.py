@@ -1,20 +1,24 @@
 from datetime import datetime
-from typing import Any
-
-from pydantic import Field
 
 from app.api.v1.schemas.common import BaseSchema
 
 
-class AgentCreate(BaseSchema):
-    label: str = Field(..., min_length=1, max_length=255)
-    demographics: dict[str, Any] | None = None
-    traits: dict[str, Any] | None = None
-
-
 class AgentResponse(BaseSchema):
     id: str
-    label: str
-    demographics: dict[str, Any] | None = None
-    traits: dict[str, Any] | None = None
+    survey_id: str
+    agent_index: int
+    eco: float
+    open: float
+    trust: float
+    temperament: float
+    age: int
+    education: str
+    urban_rural: str
+    classe_sociale: str
+    background: str
     created_at: datetime
+
+
+class AgentListResponse(BaseSchema):
+    agents: list[AgentResponse]
+    count: int

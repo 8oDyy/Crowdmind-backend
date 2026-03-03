@@ -31,8 +31,8 @@ def create_app() -> FastAPI:
 
     app = FastAPI(
         title=settings.APP_NAME,
-        version="1.0.0",
-        description="CrowdMind API - ML model hub and experiment management",
+        version="2.0.0",
+        description="CrowdMind API - Multi-agent survey simulation platform",
         lifespan=lifespan,
         docs_url=f"{settings.API_PREFIX}/docs",
         redoc_url=f"{settings.API_PREFIX}/redoc",
