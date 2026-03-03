@@ -1,17 +1,25 @@
 from enum import Enum
 
 
-class AgentType(str, Enum):
-    DIGITAL = "digital"
-    PHYSICAL = "physical"
+class SurveyMode(str, Enum):
+    TEXT = "text"
+    QUESTIONNAIRE = "questionnaire"
 
 
-class ExperimentStatus(str, Enum):
-    DRAFT = "draft"
+class SurveyStatus(str, Enum):
+    PENDING = "pending"
     RUNNING = "running"
-    STOPPED = "stopped"
+    COMPLETED = "completed"
+    FAILED = "failed"
 
 
-class ExportFormat(str, Enum):
-    JSONL = "jsonl"
-    CSV = "csv"
+class Stance(str, Enum):
+    AGREE = "agree"
+    DISAGREE = "disagree"
+    MIXED = "mixed"
+
+
+class QuestionType(str, Enum):
+    STANCE = "stance"
+    LIKERT = "likert"
+    MCQ = "mcq"

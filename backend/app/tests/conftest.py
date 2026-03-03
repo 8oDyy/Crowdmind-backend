@@ -6,355 +6,264 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.core.dependencies import (
-    get_dataset_repo,
-    get_dataset_version_repo,
-    get_model_repo,
-    get_model_version_repo,
-    get_storage_client,
+    get_agent_repo,
+    get_response_repo,
+    get_survey_aggregate_repo,
+    get_survey_question_repo,
+    get_survey_question_response_repo,
+    get_survey_repo,
 )
-from app.domain.entities.dataset import Dataset, DatasetVersion
-from app.domain.entities.model import Model, ModelVersion
-from app.infrastructure.storage.storage_client import StorageClient, StorageObjectMeta
+from app.domain.entities.agent import Agent
+from app.domain.entities.response import Response
+from app.domain.entities.survey import Survey
+from app.domain.entities.survey_aggregate import SurveyAggregate
+from app.domain.entities.survey_question import SurveyQuestion
+from app.domain.entities.survey_question_response import SurveyQuestionResponse
 from app.main import app
 
 
-class FakeDatasetRepository:
+# ── Fake Repositories ────────────────────────────────────
+
+class FakeSurveyRepository:
     def __init__(self):
-        self._datasets: dict[str, dict[str, Any]] = {}
+        self._store: dict[str, dict[str, Any]] = {}
 
-    def create_dataset(
-        self,
-        name: str,
-        dataset_type: str,
-        created_by: str,
-        description: str | None = None,
-    ) -> Dataset:
-        dataset_id = str(uuid4())
-        dataset = Dataset(
-            id=dataset_id,
-            name=name,
-            dataset_type=dataset_type,
-            created_by=created_by,
-            description=description,
-            created_at=datetime.utcnow(),
-        )
-        self._datasets[dataset_id] = {
-            "id": dataset_id,
-            "name": name,
-            "dataset_type": dataset_type,
-            "created_by": created_by,
-            "description": description,
-            "created_at": dataset.created_at,
-        }
-        return dataset
+    def create_survey(self, **kwargs) -> Survey:
+        sid = str(uuid4())
+        row = {"id": sid, "created_at": datetime.utcnow().isoformat(), **kwargs}
+        row.setdefault("status", "pending")
+        self._store[sid] = row
+        return self._to_entity(row)
 
-    def get_dataset(self, dataset_id: str) -> Dataset:
-        if dataset_id not in self._datasets:
+    def get_survey(self, survey_id: str) -> Survey:
+        if survey_id not in self._store:
             from app.core.errors import NotFoundError
-            raise NotFoundError(f"Dataset {dataset_id} not found")
-        d = self._datasets[dataset_id]
-        return Dataset(
-            id=d["id"],
-            name=d["name"],
-            dataset_type=d["dataset_type"],
-            created_by=d["created_by"],
-            description=d.get("description"),
-            created_at=d["created_at"],
-        )
+            raise NotFoundError(f"Survey {survey_id} not found")
+        return self._to_entity(self._store[survey_id])
 
-    def list_datasets(self, limit: int = 100, offset: int = 0) -> list[Dataset]:
-        datasets = list(self._datasets.values())[offset:offset + limit]
-        return [
-            Dataset(
-                id=d["id"],
-                name=d["name"],
-                dataset_type=d["dataset_type"],
-                created_by=d["created_by"],
-                description=d.get("description"),
-                created_at=d["created_at"],
-            )
-            for d in datasets
-        ]
+    def list_surveys(self, limit=100, offset=0, created_by=None) -> list[Survey]:
+        rows = list(self._store.values())
+        if created_by:
+            rows = [r for r in rows if r.get("created_by") == created_by]
+        return [self._to_entity(r) for r in rows[offset:offset + limit]]
 
-
-class FakeDatasetVersionRepository:
-    def __init__(self):
-        self._versions: dict[str, dict[str, Any]] = {}
-
-    def create_version(
-        self,
-        dataset_id: str,
-        version: str,
-        file_path: str,
-        format: str,
-        checksum: str,
-        size_kb: int,
-        schema: dict[str, Any] | None = None,
-        stats: dict[str, Any] | None = None,
-    ) -> DatasetVersion:
-        version_id = str(uuid4())
-        dataset_version = DatasetVersion(
-            id=version_id,
-            dataset_id=dataset_id,
-            version=version,
-            file_path=file_path,
-            format=format,
-            checksum=checksum,
-            size_kb=size_kb,
-            schema=schema,
-            stats=stats,
-            created_at=datetime.utcnow(),
-        )
-        self._versions[version_id] = {
-            "id": version_id,
-            "dataset_id": dataset_id,
-            "version": version,
-            "file_path": file_path,
-            "format": format,
-            "checksum": checksum,
-            "size_kb": size_kb,
-            "schema": schema,
-            "stats": stats,
-            "created_at": dataset_version.created_at,
-        }
-        return dataset_version
-
-    def get_version(self, version_id: str) -> DatasetVersion:
-        if version_id not in self._versions:
+    def update_survey(self, survey_id: str, data: dict) -> Survey:
+        if survey_id not in self._store:
             from app.core.errors import NotFoundError
-            raise NotFoundError(f"Dataset version {version_id} not found")
-        v = self._versions[version_id]
-        return DatasetVersion(
-            id=v["id"],
-            dataset_id=v["dataset_id"],
-            version=v["version"],
-            file_path=v["file_path"],
-            format=v["format"],
-            checksum=v["checksum"],
-            size_kb=v["size_kb"],
-            schema=v.get("schema"),
-            stats=v.get("stats"),
-            created_at=v["created_at"],
+            raise NotFoundError(f"Survey {survey_id} not found")
+        self._store[survey_id].update(data)
+        return self._to_entity(self._store[survey_id])
+
+    def delete_survey(self, survey_id: str) -> None:
+        self._store.pop(survey_id, None)
+
+    def _to_entity(self, row: dict) -> Survey:
+        return Survey(
+            id=row["id"], title=row.get("title", ""),
+            mode=row.get("mode", "text"),
+            input_text=row.get("input_text"),
+            status=row.get("status", "pending"),
+            model=row.get("model", "llama-3.3-70b-versatile"),
+            n_agents=row.get("n_agents", 100),
+            seed=row.get("seed", 42),
+            parameters=row.get("parameters"),
+            created_by=row.get("created_by"),
+            elapsed_seconds=row.get("elapsed_seconds"),
         )
 
-    def list_versions(
-        self,
-        dataset_id: str,
-        limit: int = 100,
-        offset: int = 0,
-    ) -> list[DatasetVersion]:
-        versions = [
-            v for v in self._versions.values()
-            if v["dataset_id"] == dataset_id
-        ][offset:offset + limit]
-        return [
-            DatasetVersion(
-                id=v["id"],
-                dataset_id=v["dataset_id"],
-                version=v["version"],
-                file_path=v["file_path"],
-                format=v["format"],
-                checksum=v["checksum"],
-                size_kb=v["size_kb"],
-                schema=v.get("schema"),
-                stats=v.get("stats"),
-                created_at=v["created_at"],
-            )
-            for v in versions
-        ]
 
-
-class FakeModelRepository:
+class FakeAgentRepository:
     def __init__(self):
-        self._models: dict[str, dict[str, Any]] = {}
+        self._store: list[dict[str, Any]] = []
 
-    def create_model(
-        self,
-        name: str,
-        framework: str,
-        description: str | None = None,
-    ) -> Model:
-        model_id = str(uuid4())
-        model = Model(
-            id=model_id,
-            name=name,
-            framework=framework,
-            description=description,
-            created_at=datetime.utcnow(),
-        )
-        self._models[model_id] = {
-            "id": model_id,
-            "name": name,
-            "framework": framework,
-            "description": description,
-            "created_at": model.created_at,
-        }
-        return model
+    def create_agents_batch(self, agents_data: list[dict]) -> list[Agent]:
+        result = []
+        for a in agents_data:
+            a.setdefault("id", str(uuid4()))
+            a.setdefault("created_at", datetime.utcnow().isoformat())
+            self._store.append(a)
+            result.append(self._to_entity(a))
+        return result
 
-    def get_model(self, model_id: str) -> Model:
-        if model_id not in self._models:
-            from app.core.errors import NotFoundError
-            raise NotFoundError(f"Model {model_id} not found")
-        m = self._models[model_id]
-        return Model(
-            id=m["id"],
-            name=m["name"],
-            framework=m["framework"],
-            description=m.get("description"),
-            created_at=m["created_at"],
+    def list_agents_by_survey(self, survey_id: str, limit=1000, offset=0) -> list[Agent]:
+        rows = [a for a in self._store if a.get("survey_id") == survey_id]
+        return [self._to_entity(r) for r in rows[offset:offset + limit]]
+
+    def delete_agents_by_survey(self, survey_id: str) -> None:
+        self._store = [a for a in self._store if a.get("survey_id") != survey_id]
+
+    def _to_entity(self, row: dict) -> Agent:
+        return Agent(
+            id=row["id"], survey_id=row["survey_id"],
+            agent_index=row.get("agent_index", 0),
+            eco=row.get("eco", 0), open=row.get("open", 0),
+            trust=row.get("trust", 0.5), temperament=row.get("temperament", 0.5),
+            age=row.get("age", 30), education=row.get("education", "bac+3"),
+            urban_rural=row.get("urban_rural", "urbain"),
+            classe_sociale=row.get("classe_sociale", "moyenne"),
+            background=row.get("background", ""),
         )
 
-    def list_models(self, limit: int = 100, offset: int = 0) -> list[Model]:
-        models = list(self._models.values())[offset:offset + limit]
-        return [
-            Model(
-                id=m["id"],
-                name=m["name"],
-                framework=m["framework"],
-                description=m.get("description"),
-                created_at=m["created_at"],
-            )
-            for m in models
-        ]
 
-
-class FakeModelVersionRepository:
+class FakeResponseRepository:
     def __init__(self):
-        self._versions: dict[str, dict[str, Any]] = {}
+        self._store: list[dict[str, Any]] = []
 
-    def create_version(
-        self,
-        model_id: str,
-        version: str,
-        file_path: str,
-        checksum: str,
-        size_kb: int,
-    ) -> ModelVersion:
-        version_id = str(uuid4())
-        model_version = ModelVersion(
-            id=version_id,
-            model_id=model_id,
-            version=version,
-            file_path=file_path,
-            checksum=checksum,
-            size_kb=size_kb,
-            created_at=datetime.utcnow(),
-        )
-        self._versions[version_id] = {
-            "id": version_id,
-            "model_id": model_id,
-            "version": version,
-            "file_path": file_path,
-            "checksum": checksum,
-            "size_kb": size_kb,
-            "created_at": model_version.created_at,
-        }
-        return model_version
+    def create_responses_batch(self, rows: list[dict]) -> list[Response]:
+        result = []
+        for r in rows:
+            r.setdefault("id", str(uuid4()))
+            self._store.append(r)
+            result.append(self._to_entity(r))
+        return result
 
-    def get_version(self, version_id: str) -> ModelVersion:
-        if version_id not in self._versions:
-            from app.core.errors import NotFoundError
-            raise NotFoundError(f"Model version {version_id} not found")
-        v = self._versions[version_id]
-        return ModelVersion(
-            id=v["id"],
-            model_id=v["model_id"],
-            version=v["version"],
-            file_path=v["file_path"],
-            checksum=v["checksum"],
-            size_kb=v["size_kb"],
-            created_at=v["created_at"],
+    def list_responses_by_survey(self, survey_id: str, limit=1000, offset=0) -> list[Response]:
+        rows = [r for r in self._store if r.get("survey_id") == survey_id]
+        return [self._to_entity(r) for r in rows[offset:offset + limit]]
+
+    def delete_responses_by_survey(self, survey_id: str) -> None:
+        self._store = [r for r in self._store if r.get("survey_id") != survey_id]
+
+    def _to_entity(self, row: dict) -> Response:
+        return Response(
+            id=row["id"], survey_id=row["survey_id"],
+            agent_id=row["agent_id"], stance=row.get("stance"),
+            confidence=row.get("confidence", 0.5),
+            short_reason=row.get("short_reason"),
+            raw_llm_output=row.get("raw_llm_output"),
+            is_fallback=row.get("is_fallback", False),
         )
 
-    def list_versions(
-        self,
-        model_id: str,
-        limit: int = 100,
-        offset: int = 0,
-    ) -> list[ModelVersion]:
-        versions = [
-            v for v in self._versions.values()
-            if v["model_id"] == model_id
-        ][offset:offset + limit]
-        return [
-            ModelVersion(
-                id=v["id"],
-                model_id=v["model_id"],
-                version=v["version"],
-                file_path=v["file_path"],
-                checksum=v["checksum"],
-                size_kb=v["size_kb"],
-                created_at=v["created_at"],
-            )
-            for v in versions
-        ]
 
-
-class FakeStorageClient(StorageClient):
+class FakeSurveyAggregateRepository:
     def __init__(self):
-        self._files: dict[str, bytes] = {}
+        self._store: list[dict[str, Any]] = []
 
-    def upload_bytes(
-        self,
-        path: str,
-        content: bytes,
-        content_type: str = "application/octet-stream",
-    ) -> StorageObjectMeta:
-        import hashlib
-        self._files[path] = content
-        return StorageObjectMeta(
-            path=path,
-            size=len(content),
-            checksum=hashlib.sha256(content).hexdigest(),
-            content_type=content_type,
+    def upsert_aggregate(self, survey_id, aggregation, question_id=None) -> SurveyAggregate:
+        row = {"id": str(uuid4()), "survey_id": survey_id,
+               "question_id": question_id, "aggregation": aggregation,
+               "computed_at": datetime.utcnow()}
+        self._store.append(row)
+        return SurveyAggregate(**row)
+
+    def get_aggregates(self, survey_id: str) -> list[SurveyAggregate]:
+        return [SurveyAggregate(**r) for r in self._store if r["survey_id"] == survey_id]
+
+    def delete_by_survey(self, survey_id: str) -> None:
+        self._store = [r for r in self._store if r["survey_id"] != survey_id]
+
+
+class FakeSurveyQuestionRepository:
+    def __init__(self):
+        self._store: list[dict[str, Any]] = []
+
+    def create_questions_batch(self, questions: list[dict]) -> list[SurveyQuestion]:
+        result = []
+        for q in questions:
+            q.setdefault("id", str(uuid4()))
+            self._store.append(q)
+            result.append(self._to_entity(q))
+        return result
+
+    def list_by_survey(self, survey_id: str) -> list[SurveyQuestion]:
+        rows = [q for q in self._store if q.get("survey_id") == survey_id]
+        return [self._to_entity(q) for q in rows]
+
+    def delete_by_survey(self, survey_id: str) -> None:
+        self._store = [q for q in self._store if q.get("survey_id") != survey_id]
+
+    def _to_entity(self, row: dict) -> SurveyQuestion:
+        return SurveyQuestion(
+            id=row["id"], survey_id=row["survey_id"],
+            question_index=row.get("question_index", 0),
+            question_id=row["question_id"], type=row["type"],
+            text=row["text"], choices=row.get("choices"),
+            scale=row.get("scale"),
         )
 
-    def get_download_url(self, path: str, expires_seconds: int = 3600) -> str:
-        return f"https://fake-storage.example.com/{path}?expires={expires_seconds}"
 
-    def delete(self, path: str) -> None:
-        if path in self._files:
-            del self._files[path]
+class FakeSurveyQuestionResponseRepository:
+    def __init__(self):
+        self._store: list[dict[str, Any]] = []
+
+    def create_batch(self, rows: list[dict]) -> list[SurveyQuestionResponse]:
+        result = []
+        for r in rows:
+            r.setdefault("id", str(uuid4()))
+            self._store.append(r)
+            result.append(self._to_entity(r))
+        return result
+
+    def list_by_survey(self, survey_id: str, limit=5000, offset=0) -> list[SurveyQuestionResponse]:
+        rows = [r for r in self._store if r.get("survey_id") == survey_id]
+        return [self._to_entity(r) for r in rows[offset:offset + limit]]
+
+    def list_by_survey_and_question(self, survey_id, question_id) -> list[SurveyQuestionResponse]:
+        rows = [r for r in self._store
+                if r.get("survey_id") == survey_id and r.get("question_id") == question_id]
+        return [self._to_entity(r) for r in rows]
+
+    def delete_by_survey(self, survey_id: str) -> None:
+        self._store = [r for r in self._store if r.get("survey_id") != survey_id]
+
+    def _to_entity(self, row: dict) -> SurveyQuestionResponse:
+        return SurveyQuestionResponse(
+            id=row["id"], survey_id=row["survey_id"],
+            agent_id=row["agent_id"], question_id=row["question_id"],
+            answer=row["answer"], confidence=row.get("confidence", 0.5),
+            short_reason=row.get("short_reason"),
+            raw_llm_output=row.get("raw_llm_output"),
+            is_fallback=row.get("is_fallback", False),
+        )
+
+
+# ── Fixtures ─────────────────────────────────────────────
+
+@pytest.fixture
+def fake_survey_repo():
+    return FakeSurveyRepository()
 
 
 @pytest.fixture
-def fake_dataset_repo() -> FakeDatasetRepository:
-    return FakeDatasetRepository()
+def fake_agent_repo():
+    return FakeAgentRepository()
 
 
 @pytest.fixture
-def fake_dataset_version_repo() -> FakeDatasetVersionRepository:
-    return FakeDatasetVersionRepository()
+def fake_response_repo():
+    return FakeResponseRepository()
 
 
 @pytest.fixture
-def fake_model_repo() -> FakeModelRepository:
-    return FakeModelRepository()
+def fake_aggregate_repo():
+    return FakeSurveyAggregateRepository()
 
 
 @pytest.fixture
-def fake_model_version_repo() -> FakeModelVersionRepository:
-    return FakeModelVersionRepository()
+def fake_question_repo():
+    return FakeSurveyQuestionRepository()
 
 
 @pytest.fixture
-def fake_storage() -> FakeStorageClient:
-    return FakeStorageClient()
+def fake_question_response_repo():
+    return FakeSurveyQuestionResponseRepository()
 
 
 @pytest.fixture
 def client(
-    fake_dataset_repo: FakeDatasetRepository,
-    fake_dataset_version_repo: FakeDatasetVersionRepository,
-    fake_model_repo: FakeModelRepository,
-    fake_model_version_repo: FakeModelVersionRepository,
-    fake_storage: FakeStorageClient,
+    fake_survey_repo,
+    fake_agent_repo,
+    fake_response_repo,
+    fake_aggregate_repo,
+    fake_question_repo,
+    fake_question_response_repo,
 ) -> TestClient:
-    app.dependency_overrides[get_dataset_repo] = lambda: fake_dataset_repo
-    app.dependency_overrides[get_dataset_version_repo] = lambda: fake_dataset_version_repo
-    app.dependency_overrides[get_model_repo] = lambda: fake_model_repo
-    app.dependency_overrides[get_model_version_repo] = lambda: fake_model_version_repo
-    app.dependency_overrides[get_storage_client] = lambda: fake_storage
+    app.dependency_overrides[get_survey_repo] = lambda: fake_survey_repo
+    app.dependency_overrides[get_agent_repo] = lambda: fake_agent_repo
+    app.dependency_overrides[get_response_repo] = lambda: fake_response_repo
+    app.dependency_overrides[get_survey_aggregate_repo] = lambda: fake_aggregate_repo
+    app.dependency_overrides[get_survey_question_repo] = lambda: fake_question_repo
+    app.dependency_overrides[get_survey_question_response_repo] = lambda: fake_question_response_repo
 
     with TestClient(app) as c:
         yield c
