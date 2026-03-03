@@ -31,11 +31,13 @@ class RealtimeService:
         if experiment_id not in self._connections:
             return
 
-        message = json.dumps({
-            "type": event_type,
-            "data": data,
-            "ts": datetime.utcnow().isoformat(),
-        })
+        message = json.dumps(
+            {
+                "type": event_type,
+                "data": data,
+                "ts": datetime.utcnow().isoformat(),
+            }
+        )
 
         dead_connections: list[WebSocket] = []
         for websocket in self._connections[experiment_id]:

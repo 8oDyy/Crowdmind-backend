@@ -17,6 +17,7 @@ class SupabaseClient:
                 raise RepoError("Supabase URL and KEY must be configured")
             try:
                 from supabase import create_client
+
                 self._client = create_client(self._url, self._key)
             except ImportError:
                 raise RepoError("supabase package not installed")

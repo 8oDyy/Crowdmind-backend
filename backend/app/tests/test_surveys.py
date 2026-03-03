@@ -1,16 +1,20 @@
 """Tests for the /surveys endpoints."""
+
 API = "/api/v1/surveys"
 
 
 class TestCreateSurvey:
     def test_create_text_survey(self, client):
-        resp = client.post(API, json={
-            "title": "Test nucléaire",
-            "mode": "text",
-            "input_text": "Le nucléaire est indispensable",
-            "n_agents": 10,
-            "seed": 42,
-        })
+        resp = client.post(
+            API,
+            json={
+                "title": "Test nucléaire",
+                "mode": "text",
+                "input_text": "Le nucléaire est indispensable",
+                "n_agents": 10,
+                "seed": 42,
+            },
+        )
         assert resp.status_code == 201
         data = resp.json()
         assert data["title"] == "Test nucléaire"
@@ -20,25 +24,41 @@ class TestCreateSurvey:
         assert data["id"]
 
     def test_create_questionnaire_survey(self, client):
-        resp = client.post(API, json={
-            "title": "Questionnaire climat",
-            "mode": "questionnaire",
-            "n_agents": 5,
-            "questions": [
-                {"question_id": "q1", "type": "stance", "text": "Le climat se réchauffe"},
-                {"question_id": "q2", "type": "likert", "text": "Importance du recyclage", "scale": [1, 2, 3, 4, 5]},
-                {"question_id": "q3", "type": "mcq", "text": "Énergie préférée", "choices": ["Solaire", "Éolien", "Nucléaire"]},
-            ],
-        })
+        resp = client.post(
+            API,
+            json={
+                "title": "Questionnaire climat",
+                "mode": "questionnaire",
+                "n_agents": 5,
+                "questions": [
+                    {"question_id": "q1", "type": "stance", "text": "Le climat se réchauffe"},
+                    {
+                        "question_id": "q2",
+                        "type": "likert",
+                        "text": "Importance du recyclage",
+                        "scale": [1, 2, 3, 4, 5],
+                    },
+                    {
+                        "question_id": "q3",
+                        "type": "mcq",
+                        "text": "Énergie préférée",
+                        "choices": ["Solaire", "Éolien", "Nucléaire"],
+                    },
+                ],
+            },
+        )
         assert resp.status_code == 201
         data = resp.json()
         assert data["mode"] == "questionnaire"
 
     def test_invalid_mode_rejected(self, client):
-        resp = client.post(API, json={
-            "title": "Bad",
-            "mode": "invalid",
-        })
+        resp = client.post(
+            API,
+            json={
+                "title": "Bad",
+                "mode": "invalid",
+            },
+        )
         assert resp.status_code == 422
 
     def test_missing_title_rejected(self, client):

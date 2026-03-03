@@ -13,9 +13,7 @@ class SurveyQuestionRepository:
     def __init__(self, db: SupabaseClient):
         self._db = db
 
-    def create_questions_batch(
-        self, questions: list[dict[str, Any]]
-    ) -> list[SurveyQuestion]:
+    def create_questions_batch(self, questions: list[dict[str, Any]]) -> list[SurveyQuestion]:
         for q in questions:
             if "id" not in q:
                 q["id"] = str(uuid4())

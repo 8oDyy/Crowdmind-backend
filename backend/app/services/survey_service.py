@@ -58,15 +58,17 @@ class SurveyService:
         if questions and mode == "questionnaire":
             q_rows = []
             for idx, q in enumerate(questions):
-                q_rows.append({
-                    "survey_id": survey.id,
-                    "question_index": idx,
-                    "question_id": q.get("question_id", f"q{idx}"),
-                    "type": q["type"],
-                    "text": q["text"],
-                    "choices": q.get("choices"),
-                    "scale": q.get("scale"),
-                })
+                q_rows.append(
+                    {
+                        "survey_id": survey.id,
+                        "question_index": idx,
+                        "question_id": q.get("question_id", f"q{idx}"),
+                        "type": q["type"],
+                        "text": q["text"],
+                        "choices": q.get("choices"),
+                        "scale": q.get("scale"),
+                    }
+                )
             self._questions.create_questions_batch(q_rows)
         logger.info(f"Survey created: {survey.id} ({survey.mode})")
         return survey
@@ -81,7 +83,9 @@ class SurveyService:
         created_by: str | None = None,
     ) -> list[Survey]:
         return self._surveys.list_surveys(
-            limit=limit, offset=offset, created_by=created_by,
+            limit=limit,
+            offset=offset,
+            created_by=created_by,
         )
 
     def delete_survey(self, survey_id: str) -> None:
@@ -91,33 +95,40 @@ class SurveyService:
     # ── Status transitions ───────────────────────────────
 
     def mark_running(self, survey_id: str) -> Survey:
-        return self._surveys.update_survey(survey_id, {
-            "status": "running",
-            "started_at": datetime.utcnow().isoformat(),
-        })
+        return self._surveys.update_survey(
+            survey_id,
+            {
+                "status": "running",
+                "started_at": datetime.utcnow().isoformat(),
+            },
+        )
 
     def mark_completed(
         self,
         survey_id: str,
         elapsed_seconds: float,
     ) -> Survey:
-        return self._surveys.update_survey(survey_id, {
-            "status": "completed",
-            "elapsed_seconds": elapsed_seconds,
-            "completed_at": datetime.utcnow().isoformat(),
-        })
+        return self._surveys.update_survey(
+            survey_id,
+            {
+                "status": "completed",
+                "elapsed_seconds": elapsed_seconds,
+                "completed_at": datetime.utcnow().isoformat(),
+            },
+        )
 
     def mark_failed(self, survey_id: str) -> Survey:
-        return self._surveys.update_survey(survey_id, {
-            "status": "failed",
-            "completed_at": datetime.utcnow().isoformat(),
-        })
+        return self._surveys.update_survey(
+            survey_id,
+            {
+                "status": "failed",
+                "completed_at": datetime.utcnow().isoformat(),
+            },
+        )
 
     # ── Agents ───────────────────────────────────────────
 
-    def store_agents(
-        self, survey_id: str, agents_data: list[dict[str, Any]]
-    ) -> int:
+    def store_agents(self, survey_id: str, agents_data: list[dict[str, Any]]) -> int:
         for a in agents_data:
             a["survey_id"] = survey_id
         self._agents.create_agents_batch(agents_data)
@@ -128,9 +139,7 @@ class SurveyService:
 
     # ── Responses (mode text) ────────────────────────────
 
-    def store_responses(
-        self, survey_id: str, responses: list[dict[str, Any]]
-    ) -> int:
+    def store_responses(self, survey_id: str, responses: list[dict[str, Any]]) -> int:
         for r in responses:
             r["survey_id"] = survey_id
         self._responses.create_responses_batch(responses)
@@ -141,9 +150,7 @@ class SurveyService:
 
     # ── Responses (mode questionnaire) ───────────────────
 
-    def store_question_responses(
-        self, survey_id: str, rows: list[dict[str, Any]]
-    ) -> int:
+    def store_question_responses(self, survey_id: str, rows: list[dict[str, Any]]) -> int:
         for r in rows:
             r["survey_id"] = survey_id
         self._question_responses.create_batch(rows)
@@ -168,14 +175,17 @@ class SurveyService:
             responses = self._responses.list_responses_by_survey(survey_id)
             agg = self._compute_text_aggregation(responses)
             result = self._aggregates.upsert_aggregate(
-                survey_id=survey_id, aggregation=agg, question_id=None,
+                survey_id=survey_id,
+                aggregation=agg,
+                question_id=None,
             )
             results.append(result)
         else:
             questions = self._questions.list_by_survey(survey_id)
             for q in questions:
                 q_responses = self._question_responses.list_by_survey_and_question(
-                    survey_id, q.question_id,
+                    survey_id,
+                    q.question_id,
                 )
                 agg = self._compute_question_aggregation(q.type, q_responses)
                 result = self._aggregates.upsert_aggregate(
@@ -197,7 +207,13 @@ class SurveyService:
     def _compute_text_aggregation(responses: list) -> dict[str, Any]:
         total = len(responses)
         if total == 0:
-            return {"total": 0, "agree_pct": 0, "disagree_pct": 0, "mixed_pct": 0, "mean_confidence": 0}
+            return {
+                "total": 0,
+                "agree_pct": 0,
+                "disagree_pct": 0,
+                "mixed_pct": 0,
+                "mean_confidence": 0,
+            }
 
         agree = sum(1 for r in responses if r.stance == "agree")
         disagree = sum(1 for r in responses if r.stance == "disagree")
@@ -208,11 +224,13 @@ class SurveyService:
         top_reasons = []
         for r in sorted(responses, key=lambda x: x.confidence, reverse=True)[:10]:
             if r.short_reason:
-                top_reasons.append({
-                    "stance": r.stance,
-                    "confidence": round(r.confidence, 3),
-                    "reason": r.short_reason,
-                })
+                top_reasons.append(
+                    {
+                        "stance": r.stance,
+                        "confidence": round(r.confidence, 3),
+                        "reason": r.short_reason,
+                    }
+                )
 
         return {
             "total": total,
