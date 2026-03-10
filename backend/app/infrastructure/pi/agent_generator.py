@@ -10,7 +10,6 @@ import random
 from dataclasses import dataclass
 from typing import List
 
-
 # --- Enumerations for demographic axes ---
 
 EDUCATION_LEVELS = ["sans_diplome", "brevet", "bac", "bac+2", "bac+3", "bac+5", "doctorat"]
@@ -23,15 +22,15 @@ class AgentProfile:
     """Represents a single ideological agent."""
 
     id: int
-    eco: float             # -1 (left/redistributive) … +1 (right/market)
-    open: float            # -1 (conservative/identitarian) … +1 (cosmopolitan/progressive)
-    trust: float           # 0 (distrust institutions) … 1 (trust institutions)
-    temperament: float     # 0 (calme/réfléchi) … 1 (impulsif/tranché)
-    age: int               # 18–85
-    education: str         # one of EDUCATION_LEVELS
-    urban_rural: str       # one of URBAN_RURAL
-    classe_sociale: str    # one of CLASSE_SOCIALE
-    background: str        # 1-2 sentence stable persona description
+    eco: float  # -1 (left/redistributive) … +1 (right/market)
+    open: float  # -1 (conservative/identitarian) … +1 (cosmopolitan/progressive)
+    trust: float  # 0 (distrust institutions) … 1 (trust institutions)
+    temperament: float  # 0 (calme/réfléchi) … 1 (impulsif/tranché)
+    age: int  # 18–85
+    education: str  # one of EDUCATION_LEVELS
+    urban_rural: str  # one of URBAN_RURAL
+    classe_sociale: str  # one of CLASSE_SOCIALE
+    background: str  # 1-2 sentence stable persona description
 
 
 def _clamp(value: float, lo: float, hi: float) -> float:
@@ -78,8 +77,14 @@ def _pick_classe(rng: random.Random, eco: float) -> str:
 
 
 def _build_background(
-    eco: float, opn: float, trust: float, temperament: float,
-    age: int, education: str, classe: str, urban: str,
+    eco: float,
+    opn: float,
+    trust: float,
+    temperament: float,
+    age: int,
+    education: str,
+    classe: str,
+    urban: str,
 ) -> str:
     """Derive a 1-2 sentence stable persona description from agent axes."""
     parts: List[str] = []
@@ -122,11 +127,11 @@ def generate_agents(n: int, seed: int) -> List[AgentProfile]:
 
     clusters = [
         # (weight, mean_eco, mean_open, std_eco, std_open, mean_trust, std_trust)
-        (0.30, -0.30,  0.30, 0.25, 0.25, 0.55, 0.20),  # centre-gauche progressiste
-        (0.25,  0.30, -0.20, 0.25, 0.25, 0.50, 0.20),  # centre-droite conservateur
-        (0.10, -0.70,  0.50, 0.15, 0.20, 0.25, 0.15),  # gauche radicale
-        (0.10,  0.70, -0.60, 0.15, 0.20, 0.30, 0.15),  # droite radicale
-        (0.25,  0.00,  0.00, 0.45, 0.45, 0.45, 0.25),  # bruit uniforme / divers
+        (0.30, -0.30, 0.30, 0.25, 0.25, 0.55, 0.20),  # centre-gauche progressiste
+        (0.25, 0.30, -0.20, 0.25, 0.25, 0.50, 0.20),  # centre-droite conservateur
+        (0.10, -0.70, 0.50, 0.15, 0.20, 0.25, 0.15),  # gauche radicale
+        (0.10, 0.70, -0.60, 0.15, 0.20, 0.30, 0.15),  # droite radicale
+        (0.25, 0.00, 0.00, 0.45, 0.45, 0.45, 0.25),  # bruit uniforme / divers
     ]
 
     weights = [c[0] for c in clusters]
@@ -152,17 +157,19 @@ def generate_agents(n: int, seed: int) -> List[AgentProfile]:
 
         bg = _build_background(eco, opn, trust, temperament, age, education, classe, urban)
 
-        agents.append(AgentProfile(
-            id=i,
-            eco=round(eco, 3),
-            open=round(opn, 3),
-            trust=round(trust, 3),
-            temperament=round(temperament, 3),
-            age=age,
-            education=education,
-            urban_rural=urban,
-            classe_sociale=classe,
-            background=bg,
-        ))
+        agents.append(
+            AgentProfile(
+                id=i,
+                eco=round(eco, 3),
+                open=round(opn, 3),
+                trust=round(trust, 3),
+                temperament=round(temperament, 3),
+                age=age,
+                education=education,
+                urban_rural=urban,
+                classe_sociale=classe,
+                background=bg,
+            )
+        )
 
     return agents

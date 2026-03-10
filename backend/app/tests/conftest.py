@@ -13,13 +13,13 @@ from app.core.dependencies import (
     get_survey_question_response_repo,
     get_survey_repo,
 )
-from app.infrastructure.pi.pi_client import get_pi_client
 from app.domain.entities.agent import Agent
 from app.domain.entities.response import Response
 from app.domain.entities.survey import Survey
 from app.domain.entities.survey_aggregate import SurveyAggregate
 from app.domain.entities.survey_question import SurveyQuestion
 from app.domain.entities.survey_question_response import SurveyQuestionResponse
+from app.infrastructure.pi.pi_client import get_pi_client
 from app.main import app
 
 # ── Fake Repositories ────────────────────────────────────
@@ -250,12 +250,14 @@ class FakePiClient:
         responses = []
         stances = ["agree", "disagree", "mixed"]
         for i in range(n_agents):
-            responses.append({
-                "agent_id": i,
-                "stance": stances[i % 3],
-                "confidence": round(0.5 + (i % 5) * 0.1, 2),
-                "short_reason": f"Reason from agent {i}",
-            })
+            responses.append(
+                {
+                    "agent_id": i,
+                    "stance": stances[i % 3],
+                    "confidence": round(0.5 + (i % 5) * 0.1, 2),
+                    "short_reason": f"Reason from agent {i}",
+                }
+            )
         total = len(responses)
         agree = sum(1 for r in responses if r["stance"] == "agree")
         disagree = sum(1 for r in responses if r["stance"] == "disagree")
@@ -276,7 +278,10 @@ class FakePiClient:
         }
 
     def survey_questions(
-        self, questions: list, n_agents: int = 100, seed: int = 42,
+        self,
+        questions: list,
+        n_agents: int = 100,
+        seed: int = 42,
     ) -> dict:
         responses = []
         for i in range(n_agents):
@@ -292,12 +297,14 @@ class FakePiClient:
                     answer = choices[i % len(choices)]
                 else:
                     answer = "mixed"
-                answers.append({
-                    "questionId": q["id"],
-                    "answer": answer,
-                    "confidence": round(0.5 + (i % 5) * 0.1, 2),
-                    "short_reason": f"Reason for {q['id']} from agent {i}",
-                })
+                answers.append(
+                    {
+                        "questionId": q["id"],
+                        "answer": answer,
+                        "confidence": round(0.5 + (i % 5) * 0.1, 2),
+                        "short_reason": f"Reason for {q['id']} from agent {i}",
+                    }
+                )
             responses.append({"agent_id": i, "answers": answers})
 
         aggregates = {}

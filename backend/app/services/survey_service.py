@@ -168,15 +168,17 @@ class SurveyService:
             agent_id = agent_uuid_map.get(agent_index)
             if not agent_id:
                 continue
-            rows.append({
-                "survey_id": survey_id,
-                "agent_id": agent_id,
-                "stance": r.get("stance"),
-                "confidence": r.get("confidence", 0.5),
-                "short_reason": r.get("short_reason"),
-                "raw_llm_output": None,
-                "is_fallback": False,
-            })
+            rows.append(
+                {
+                    "survey_id": survey_id,
+                    "agent_id": agent_id,
+                    "stance": r.get("stance"),
+                    "confidence": r.get("confidence", 0.5),
+                    "short_reason": r.get("short_reason"),
+                    "raw_llm_output": None,
+                    "is_fallback": False,
+                }
+            )
         if rows:
             self._responses.create_responses_batch(rows)
         logger.info(f"Survey {survey_id}: {len(rows)} text responses stored")
@@ -196,16 +198,18 @@ class SurveyService:
             if not agent_id:
                 continue
             for answer in agent_resp.get("answers", []):
-                rows.append({
-                    "survey_id": survey_id,
-                    "agent_id": agent_id,
-                    "question_id": answer.get("questionId"),
-                    "answer": str(answer.get("answer", "")),
-                    "confidence": answer.get("confidence", 0.5),
-                    "short_reason": answer.get("short_reason"),
-                    "raw_llm_output": None,
-                    "is_fallback": False,
-                })
+                rows.append(
+                    {
+                        "survey_id": survey_id,
+                        "agent_id": agent_id,
+                        "question_id": answer.get("questionId"),
+                        "answer": str(answer.get("answer", "")),
+                        "confidence": answer.get("confidence", 0.5),
+                        "short_reason": answer.get("short_reason"),
+                        "raw_llm_output": None,
+                        "is_fallback": False,
+                    }
+                )
         if rows:
             self._question_responses.create_batch(rows)
         logger.info(f"Survey {survey_id}: {len(rows)} question responses stored")
