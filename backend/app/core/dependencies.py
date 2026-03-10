@@ -4,6 +4,7 @@ from fastapi import Depends
 
 from app.core.config import Settings, get_settings
 from app.infrastructure.db.supabase_client import SupabaseClient, get_supabase_client
+from app.infrastructure.pi.pi_client import PiClient, get_pi_client
 from app.repositories.agent_repo import AgentRepository
 from app.repositories.response_repo import ResponseRepository
 from app.repositories.survey_aggregate_repo import SurveyAggregateRepository
@@ -15,6 +16,7 @@ from app.services.survey_service import SurveyService
 
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 SupabaseDep = Annotated[SupabaseClient, Depends(get_supabase_client)]
+PiClientDep = Annotated[PiClient, Depends(get_pi_client)]
 
 
 # ── Repositories ─────────────────────────────────────────

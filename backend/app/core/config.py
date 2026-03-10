@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     OLLAMA_HOST: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama3.2:3b"
 
+    CROWDMIND_PI_URL: str = "http://localhost:5000"
+    PI_TIMEOUT: float = 30.0
+
     @property
     def cors_origins_list(self) -> list[str]:
         if self.CORS_ORIGINS == "*":

@@ -12,6 +12,7 @@ class BaseSchema(BaseModel):
 
 class HealthResponse(BaseSchema):
     status: str = "ok"
+    pi_status: str | None = None
 
 
 class ErrorDetail(BaseSchema):
