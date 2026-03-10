@@ -13,6 +13,7 @@ from app.core.dependencies import (
     get_survey_question_response_repo,
     get_survey_repo,
 )
+from app.infrastructure.pi.pi_client import get_pi_client
 from app.domain.entities.agent import Agent
 from app.domain.entities.response import Response
 from app.domain.entities.survey import Survey
@@ -239,6 +240,77 @@ class FakeSurveyQuestionResponseRepository:
         )
 
 
+class FakePiClient:
+    """Fake Pi client that returns deterministic heuristic-like responses."""
+
+    def health(self) -> dict:
+        return {"status": "ok", "engine": "heuristic"}
+
+    def survey_text(self, text: str, n_agents: int = 100, seed: int = 42) -> dict:
+        responses = []
+        stances = ["agree", "disagree", "mixed"]
+        for i in range(n_agents):
+            responses.append({
+                "agent_id": i,
+                "stance": stances[i % 3],
+                "confidence": round(0.5 + (i % 5) * 0.1, 2),
+                "short_reason": f"Reason from agent {i}",
+            })
+        total = len(responses)
+        agree = sum(1 for r in responses if r["stance"] == "agree")
+        disagree = sum(1 for r in responses if r["stance"] == "disagree")
+        mixed = total - agree - disagree
+        return {
+            "metadata": {"engine": "heuristic", "n_agents": n_agents, "seed": seed},
+            "responses": responses,
+            "aggregates": {
+                "total": total,
+                "agree_count": agree,
+                "agree_pct": round(agree / total * 100, 1),
+                "disagree_count": disagree,
+                "disagree_pct": round(disagree / total * 100, 1),
+                "mixed_count": mixed,
+                "mixed_pct": round(mixed / total * 100, 1),
+                "mean_confidence": 0.7,
+            },
+        }
+
+    def survey_questions(
+        self, questions: list, n_agents: int = 100, seed: int = 42,
+    ) -> dict:
+        responses = []
+        for i in range(n_agents):
+            answers = []
+            for q in questions:
+                if q["type"] == "stance":
+                    answer = ["agree", "disagree", "mixed"][i % 3]
+                elif q["type"] == "likert":
+                    scale = q.get("scale", [1, 2, 3, 4, 5])
+                    answer = scale[i % len(scale)]
+                elif q["type"] == "mcq":
+                    choices = q.get("choices", ["A"])
+                    answer = choices[i % len(choices)]
+                else:
+                    answer = "mixed"
+                answers.append({
+                    "questionId": q["id"],
+                    "answer": answer,
+                    "confidence": round(0.5 + (i % 5) * 0.1, 2),
+                    "short_reason": f"Reason for {q['id']} from agent {i}",
+                })
+            responses.append({"agent_id": i, "answers": answers})
+
+        aggregates = {}
+        for q in questions:
+            aggregates[q["id"]] = {"type": q["type"], "total": n_agents, "mean_confidence": 0.7}
+
+        return {
+            "metadata": {"engine": "heuristic", "n_agents": n_agents, "seed": seed},
+            "responses": responses,
+            "aggregates": aggregates,
+        }
+
+
 # ── Fixtures ─────────────────────────────────────────────
 
 
@@ -273,6 +345,11 @@ def fake_question_response_repo():
 
 
 @pytest.fixture
+def fake_pi_client():
+    return FakePiClient()
+
+
+@pytest.fixture
 def client(
     fake_survey_repo,
     fake_agent_repo,
@@ -280,6 +357,7 @@ def client(
     fake_aggregate_repo,
     fake_question_repo,
     fake_question_response_repo,
+    fake_pi_client,
 ) -> TestClient:
     app.dependency_overrides[get_survey_repo] = lambda: fake_survey_repo
     app.dependency_overrides[get_agent_repo] = lambda: fake_agent_repo
@@ -289,6 +367,7 @@ def client(
     app.dependency_overrides[get_survey_question_response_repo] = lambda: (
         fake_question_response_repo
     )
+    app.dependency_overrides[get_pi_client] = lambda: fake_pi_client
 
     with TestClient(app) as c:
         yield c

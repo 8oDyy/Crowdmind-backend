@@ -31,12 +31,17 @@ class ConflictError(AppError):
     pass
 
 
+class PiError(AppError):
+    pass
+
+
 ERROR_STATUS_MAP: dict[type[AppError], int] = {
     NotFoundError: 404,
     ValidationError: 422,
     StorageError: 502,
     RepoError: 500,
     ConflictError: 409,
+    PiError: 502,
 }
 
 

@@ -19,9 +19,11 @@ class TestCreateSurvey:
         data = resp.json()
         assert data["title"] == "Test nucléaire"
         assert data["mode"] == "text"
-        assert data["status"] == "pending"
+        assert data["status"] == "completed"
+        assert data["model"] == "heuristic"
         assert data["n_agents"] == 10
         assert data["id"]
+        assert data["elapsed_seconds"] is not None
 
     def test_create_questionnaire_survey(self, client):
         resp = client.post(
@@ -50,6 +52,8 @@ class TestCreateSurvey:
         assert resp.status_code == 201
         data = resp.json()
         assert data["mode"] == "questionnaire"
+        assert data["status"] == "completed"
+        assert data["model"] == "heuristic"
 
     def test_invalid_mode_rejected(self, client):
         resp = client.post(
@@ -104,27 +108,64 @@ class TestDeleteSurvey:
 
 
 class TestSurveyAgents:
-    def test_agents_empty_initially(self, client):
-        create = client.post(API, json={"title": "No agents", "mode": "text"})
+    def test_agents_populated_after_create(self, client):
+        create = client.post(
+            API,
+            json={"title": "With agents", "mode": "text", "input_text": "test", "n_agents": 10},
+        )
         sid = create.json()["id"]
         resp = client.get(f"{API}/{sid}/agents")
         assert resp.status_code == 200
-        assert resp.json()["count"] == 0
+        assert resp.json()["count"] == 10
 
 
 class TestSurveyResponses:
-    def test_responses_empty_initially(self, client):
-        create = client.post(API, json={"title": "No resp", "mode": "text"})
+    def test_responses_populated_after_text_survey(self, client):
+        create = client.post(
+            API,
+            json={"title": "With resp", "mode": "text", "input_text": "test", "n_agents": 10},
+        )
         sid = create.json()["id"]
         resp = client.get(f"{API}/{sid}/responses")
         assert resp.status_code == 200
-        assert resp.json()["count"] == 0
+        assert resp.json()["count"] == 10
+
+
+class TestSurveyQuestionResponses:
+    def test_question_responses_populated_after_questionnaire(self, client):
+        create = client.post(
+            API,
+            json={
+                "title": "With q-resp",
+                "mode": "questionnaire",
+                "n_agents": 5,
+                "questions": [
+                    {"question_id": "q1", "type": "stance", "text": "Test question"},
+                ],
+            },
+        )
+        sid = create.json()["id"]
+        resp = client.get(f"{API}/{sid}/question-responses")
+        assert resp.status_code == 200
+        assert resp.json()["count"] == 5
 
 
 class TestSurveyAggregates:
-    def test_aggregates_empty(self, client):
-        create = client.post(API, json={"title": "No agg", "mode": "text"})
+    def test_aggregates_populated_after_create(self, client):
+        create = client.post(
+            API,
+            json={"title": "With agg", "mode": "text", "input_text": "test", "n_agents": 10},
+        )
         sid = create.json()["id"]
         resp = client.get(f"{API}/{sid}/aggregates")
         assert resp.status_code == 200
-        assert resp.json()["count"] == 0
+        assert resp.json()["count"] == 1
+
+
+class TestHealthCheck:
+    def test_health(self, client):
+        resp = client.get("/api/v1/health")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["status"] == "ok"
+        assert data["pi_status"] == "ok"

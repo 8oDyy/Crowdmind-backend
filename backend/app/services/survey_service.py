@@ -1,9 +1,12 @@
+import time
 from datetime import datetime
 from typing import Any
 
 from app.core.logging import get_logger
 from app.domain.entities.survey import Survey
 from app.domain.entities.survey_aggregate import SurveyAggregate
+from app.infrastructure.pi.agent_generator import generate_agents
+from app.infrastructure.pi.pi_client import PiClient
 from app.repositories.agent_repo import AgentRepository
 from app.repositories.response_repo import ResponseRepository
 from app.repositories.survey_aggregate_repo import SurveyAggregateRepository
@@ -72,6 +75,166 @@ class SurveyService:
             self._questions.create_questions_batch(q_rows)
         logger.info(f"Survey created: {survey.id} ({survey.mode})")
         return survey
+
+    def run_survey(self, survey: Survey, pi_client: PiClient) -> Survey:
+        """Execute the full survey pipeline: call Pi, store results, compute aggregates."""
+        t0 = time.monotonic()
+        survey_id = survey.id
+
+        try:
+            # 1. Mark running
+            self.mark_running(survey_id)
+            logger.info(f"Survey {survey_id} running — calling Pi...")
+
+            # 2. Generate agents locally (same seed = same profiles as Pi)
+            agent_profiles = generate_agents(n=survey.n_agents, seed=survey.seed)
+
+            # 3. Store agents in DB and build index→uuid mapping
+            agents_data = [
+                {
+                    "survey_id": survey_id,
+                    "agent_index": ap.id,
+                    "eco": ap.eco,
+                    "open": ap.open,
+                    "trust": ap.trust,
+                    "temperament": ap.temperament,
+                    "age": ap.age,
+                    "education": ap.education,
+                    "urban_rural": ap.urban_rural,
+                    "classe_sociale": ap.classe_sociale,
+                    "background": ap.background,
+                }
+                for ap in agent_profiles
+            ]
+            created_agents = self._agents.create_agents_batch(agents_data)
+            # Map agent_index → agent uuid
+            agent_uuid_map: dict[int, str] = {}
+            for agent in created_agents:
+                agent_uuid_map[agent.agent_index] = agent.id
+            logger.info(f"Survey {survey_id}: {len(created_agents)} agents stored")
+
+            # 4. Call the Pi
+            if survey.mode == "text":
+                pi_data = pi_client.survey_text(
+                    text=survey.input_text or "",
+                    n_agents=survey.n_agents,
+                    seed=survey.seed,
+                )
+                self._store_text_results(survey_id, pi_data, agent_uuid_map)
+            else:
+                questions = self._questions.list_by_survey(survey_id)
+                questions_payload = [
+                    {
+                        "id": q.question_id,
+                        "type": q.type,
+                        "text": q.text,
+                        "choices": q.choices,
+                        "scale": q.scale,
+                    }
+                    for q in questions
+                ]
+                pi_data = pi_client.survey_questions(
+                    questions=questions_payload,
+                    n_agents=survey.n_agents,
+                    seed=survey.seed,
+                )
+                self._store_questionnaire_results(survey_id, pi_data, agent_uuid_map)
+
+            # 5. Store aggregates from Pi response
+            self._store_pi_aggregates(survey_id, survey.mode, pi_data.get("aggregates", {}))
+
+            # 6. Mark completed
+            elapsed = round(time.monotonic() - t0, 3)
+            survey = self.mark_completed(survey_id, elapsed)
+            logger.info(f"Survey {survey_id} completed in {elapsed}s")
+            return survey
+
+        except Exception as e:
+            logger.error(f"Survey {survey_id} failed: {e}")
+            self.mark_failed(survey_id)
+            raise
+
+    def _store_text_results(
+        self,
+        survey_id: str,
+        pi_data: dict[str, Any],
+        agent_uuid_map: dict[int, str],
+    ) -> None:
+        """Store Pi text-mode responses into the responses table."""
+        pi_responses = pi_data.get("responses", [])
+        rows = []
+        for r in pi_responses:
+            agent_index = r["agent_id"]
+            agent_id = agent_uuid_map.get(agent_index)
+            if not agent_id:
+                continue
+            rows.append({
+                "survey_id": survey_id,
+                "agent_id": agent_id,
+                "stance": r.get("stance"),
+                "confidence": r.get("confidence", 0.5),
+                "short_reason": r.get("short_reason"),
+                "raw_llm_output": None,
+                "is_fallback": False,
+            })
+        if rows:
+            self._responses.create_responses_batch(rows)
+        logger.info(f"Survey {survey_id}: {len(rows)} text responses stored")
+
+    def _store_questionnaire_results(
+        self,
+        survey_id: str,
+        pi_data: dict[str, Any],
+        agent_uuid_map: dict[int, str],
+    ) -> None:
+        """Store Pi questionnaire-mode responses into the question_responses table."""
+        pi_responses = pi_data.get("responses", [])
+        rows = []
+        for agent_resp in pi_responses:
+            agent_index = agent_resp["agent_id"]
+            agent_id = agent_uuid_map.get(agent_index)
+            if not agent_id:
+                continue
+            for answer in agent_resp.get("answers", []):
+                rows.append({
+                    "survey_id": survey_id,
+                    "agent_id": agent_id,
+                    "question_id": answer.get("questionId"),
+                    "answer": str(answer.get("answer", "")),
+                    "confidence": answer.get("confidence", 0.5),
+                    "short_reason": answer.get("short_reason"),
+                    "raw_llm_output": None,
+                    "is_fallback": False,
+                })
+        if rows:
+            self._question_responses.create_batch(rows)
+        logger.info(f"Survey {survey_id}: {len(rows)} question responses stored")
+
+    def _store_pi_aggregates(
+        self,
+        survey_id: str,
+        mode: str,
+        aggregates: dict[str, Any],
+    ) -> None:
+        """Store aggregates returned by the Pi directly."""
+        if not aggregates:
+            return
+        self._aggregates.delete_by_survey(survey_id)
+
+        if mode == "text":
+            self._aggregates.upsert_aggregate(
+                survey_id=survey_id,
+                aggregation=aggregates,
+                question_id=None,
+            )
+        else:
+            for question_id, agg_data in aggregates.items():
+                self._aggregates.upsert_aggregate(
+                    survey_id=survey_id,
+                    aggregation=agg_data,
+                    question_id=question_id,
+                )
+        logger.info(f"Survey {survey_id}: aggregates stored from Pi")
 
     def get_survey(self, survey_id: str) -> Survey:
         return self._surveys.get_survey(survey_id)
