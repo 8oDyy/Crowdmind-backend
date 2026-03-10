@@ -15,13 +15,13 @@ from app.api.v1.schemas.survey import (
     SurveyQuestionResponse,
     SurveyResponse,
 )
-from app.core.dependencies import SurveyServiceDep
+from app.core.dependencies import PiClientDep, SurveyServiceDep
 
 router = APIRouter(prefix="/surveys", tags=["Surveys"])
 
 
 @router.post("", response_model=SurveyResponse, status_code=201)
-def create_survey(body: SurveyCreate, svc: SurveyServiceDep):
+def create_survey(body: SurveyCreate, svc: SurveyServiceDep, pi: PiClientDep):
     questions_data = None
     if body.questions:
         questions_data = [q.model_dump() for q in body.questions]
@@ -29,12 +29,13 @@ def create_survey(body: SurveyCreate, svc: SurveyServiceDep):
         title=body.title,
         mode=body.mode,
         input_text=body.input_text,
-        model=body.model,
+        model="heuristic",
         n_agents=body.n_agents,
         seed=body.seed,
         parameters=body.parameters,
         questions=questions_data,
     )
+    survey = svc.run_survey(survey, pi)
     return _survey_to_response(survey)
 
 
