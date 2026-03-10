@@ -7,7 +7,7 @@ API FastAPI pour la simulation de sondages multi-agents avec LLM (Groq / Ollama)
 > sondages, agents, réponses et agrégations dans Supabase et diffuse les résultats
 > en temps réel via WebSocket.
 
-## Prérequis
+## Prérequi
 
 - Python 3.11+
 - Compte Supabase (PostgreSQL)
