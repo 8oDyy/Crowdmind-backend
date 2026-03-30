@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
@@ -13,6 +14,7 @@ from app.core.errors import (
     http_exception_handler,
 )
 from app.core.logging import get_logger, setup_logging
+from app.infrastructure.pi.pi_ws_manager import get_pi_ws_manager
 
 logger = get_logger(__name__)
 
@@ -21,6 +23,8 @@ logger = get_logger(__name__)
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     setup_logging()
     settings = get_settings()
+    # Enregistre la boucle asyncio dans le manager Pi pour call_sync()
+    get_pi_ws_manager().set_loop(asyncio.get_running_loop())
     logger.info(f"Starting {settings.APP_NAME} in {settings.ENV} mode")
     yield
     logger.info("Shutting down...")
