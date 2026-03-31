@@ -55,3 +55,4 @@ jobs:
             docker compose -f "${{ steps.vars.outputs.compose_file }}" pull
             docker compose -f "${{ steps.vars.outputs.compose_file }}" up -d --force-recreate
             docker image prune -f
+            docker exec crowdmind_nginx nginx -s reload
