@@ -29,9 +29,7 @@ async def pi_worker_ws(websocket: WebSocket) -> None:
     if settings.PI_TOKEN:
         token = (
             websocket.query_params.get("token")
-            or websocket.headers.get("authorization", "")
-            .removeprefix("Bearer ")
-            .strip()
+            or websocket.headers.get("authorization", "").removeprefix("Bearer ").strip()
         )
         if token != settings.PI_TOKEN:
             logger.warning("Pi worker rejected: invalid token")
