@@ -125,11 +125,15 @@ class SurveyService:
                 questions = self._questions.list_by_survey(survey_id)
                 questions_payload = [
                     {
-                        "id": q.question_id,
-                        "type": q.type,
-                        "text": q.text,
-                        "choices": q.choices,
-                        "scale": q.scale,
+                        k: v
+                        for k, v in {
+                            "id": q.question_id,
+                            "type": q.type,
+                            "text": q.text,
+                            "choices": q.choices,
+                            "scale": q.scale,
+                        }.items()
+                        if v is not None
                     }
                     for q in questions
                 ]

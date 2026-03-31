@@ -16,6 +16,31 @@ jobs:
     environment: ${{ github.event.workflow_run.head_branch == 'main' && 'prod' || 'staging' }}
 
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Set deploy variables
+        id: vars
+        run: |
+          if [ "${{ github.event.workflow_run.head_branch }}" = "main" ]; then
+            echo "deploy_path=${{ secrets.DEPLOY_PATH_PROD }}" >> $GITHUB_OUTPUT
+            echo "compose_file=docker-compose.prod.yml" >> $GITHUB_OUTPUT
+          else
+            echo "deploy_path=${{ secrets.DEPLOY_PATH_STAGING }}" >> $GITHUB_OUTPUT
+            echo "compose_file=docker-compose.staging.yml" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Copy compose file to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          source: ${{ steps.vars.outputs.compose_file }}
+          target: ${{ steps.vars.outputs.deploy_path }}
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -25,17 +50,8 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             set -e
-
-            if [ "${{ github.event.workflow_run.head_branch }}" = "main" ]; then
-              DEPLOY_PATH="${{ secrets.DEPLOY_PATH_PROD }}"
-              COMPOSE_FILE="docker-compose.prod.yml"
-            else
-              DEPLOY_PATH="${{ secrets.DEPLOY_PATH_STAGING }}"
-              COMPOSE_FILE="docker-compose.staging.yml"
-            fi
-
-            cd "$DEPLOY_PATH"
-            docker login ghcr.io -u "${{ secrets.GHCR_USER }}" -p "${{ secrets.GHCR_TOKEN }}"
-            docker compose -f "$COMPOSE_FILE" pull
-            docker compose -f "$COMPOSE_FILE" up -d --force-recreate
+            cd "${{ steps.vars.outputs.deploy_path }}"
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USER }}" --password-stdin
+            docker compose -f "${{ steps.vars.outputs.compose_file }}" pull
+            docker compose -f "${{ steps.vars.outputs.compose_file }}" up -d --force-recreate
             docker image prune -f
