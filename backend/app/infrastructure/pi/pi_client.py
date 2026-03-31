@@ -1,4 +1,9 @@
-"""HTTP client for the CrowdMindAvis Raspberry Pi heuristic engine."""
+"""Client pour le Pi heuristic engine.
+
+Priorité : connexion WebSocket inverse (Pi → backend) si disponible.
+Fallback  : appel HTTP direct (CROWDMIND_PI_URL) si le Pi est accessible
+            en réseau (utile en dev local).
+"""
 
 from __future__ import annotations
 
@@ -9,27 +14,33 @@ import httpx
 from app.core.config import get_settings
 from app.core.errors import PiError
 from app.core.logging import get_logger
+from app.infrastructure.pi.pi_ws_manager import PiWsManager, get_pi_ws_manager
 
 logger = get_logger(__name__)
 
 
 class PiClientError(PiError):
-    """Raised when the Pi is unreachable or returns an error."""
-
     def __init__(self, message: str):
         super().__init__(message=message)
 
 
 class PiClient:
-    """Synchronous HTTP client for the Raspberry Pi API."""
+    """Client Pi — WebSocket si connecté, HTTP sinon."""
 
     def __init__(self, base_url: str | None = None, timeout: float | None = None):
         settings = get_settings()
         self._base_url = (base_url or settings.CROWDMIND_PI_URL).rstrip("/")
         self._timeout = timeout or settings.PI_TIMEOUT
 
+    def _mgr(self) -> PiWsManager:
+        return get_pi_ws_manager()
+
+    # ── Interface publique (inchangée) ────────────────────
+
     def health(self) -> dict[str, Any]:
-        """Check Pi health: GET /health."""
+        mgr = self._mgr()
+        if mgr.connected:
+            return mgr.call_sync("health", {}, timeout=10.0)
         return self._get("/health")
 
     def survey_text(
@@ -38,7 +49,13 @@ class PiClient:
         n_agents: int = 100,
         seed: int = 42,
     ) -> dict[str, Any]:
-        """Run a text survey on the Pi: POST /api/survey/text."""
+        mgr = self._mgr()
+        if mgr.connected:
+            return mgr.call_sync(
+                "survey_text",
+                {"text": text, "n_agents": n_agents, "seed": seed},
+                timeout=self._timeout,
+            )
         return self._post(
             "/api/survey/text",
             json={"text": text, "n_agents": n_agents, "seed": seed},
@@ -50,13 +67,19 @@ class PiClient:
         n_agents: int = 100,
         seed: int = 42,
     ) -> dict[str, Any]:
-        """Run a questionnaire survey on the Pi: POST /api/survey/questions."""
+        mgr = self._mgr()
+        if mgr.connected:
+            return mgr.call_sync(
+                "survey_questions",
+                {"questions": questions, "n_agents": n_agents, "seed": seed},
+                timeout=self._timeout,
+            )
         return self._post(
             "/api/survey/questions",
             json={"questions": questions, "n_agents": n_agents, "seed": seed},
         )
 
-    # ── Internal ──────────────────────────────────────────
+    # ── HTTP fallback ─────────────────────────────────────
 
     def _get(self, path: str) -> dict[str, Any]:
         url = f"{self._base_url}{path}"

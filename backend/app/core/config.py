@@ -31,6 +31,7 @@ class Settings(BaseSettings):
 
     CROWDMIND_PI_URL: str = "http://localhost:5000"
     PI_TIMEOUT: float = 30.0
+    PI_TOKEN: str = ""  # Token d'auth pour le WebSocket Pi (vide = pas d'auth)
 
     @property
     def cors_origins_list(self) -> list[str]:
