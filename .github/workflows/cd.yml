@@ -35,14 +35,14 @@ jobs:
             echo "compose_file=docker-compose.staging.yml" >> $GITHUB_OUTPUT
           fi
 
-      - name: Copy compose file to server
+      - name: Copy compose + bootstrap to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
-          source: ${{ steps.vars.outputs.compose_file }}
+          source: "${{ steps.vars.outputs.compose_file }},infra/bootstrap.sh"
           target: ${{ steps.vars.outputs.deploy_path }}
 
       - name: Deploy via SSH
@@ -55,6 +55,7 @@ jobs:
           script: |
             set -e
             cd "${{ steps.vars.outputs.deploy_path }}"
+            chmod +x infra/bootstrap.sh && ./infra/bootstrap.sh
             echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USER }}" --password-stdin
             docker compose -f "${{ steps.vars.outputs.compose_file }}" pull
             docker compose -f "${{ steps.vars.outputs.compose_file }}" up -d --force-recreate
