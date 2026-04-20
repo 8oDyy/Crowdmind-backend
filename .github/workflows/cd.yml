@@ -60,7 +60,7 @@ jobs:
             docker compose -f "${{ steps.vars.outputs.compose_file }}" pull
             docker compose -f "${{ steps.vars.outputs.compose_file }}" up -d --force-recreate
 
-            SERVICE=$(docker compose -f "${{ steps.vars.outputs.compose_file }}" config --services | head -n1)
+            SERVICE=$(docker compose -f "${{ steps.vars.outputs.compose_file }}" config --services | grep '^api' | head -n1)
             for i in $(seq 1 30); do
               if docker compose -f "${{ steps.vars.outputs.compose_file }}" exec -T "$SERVICE" \
                   python -c "import urllib.request,sys; urllib.request.urlopen('http://localhost:8000/api/v1/health', timeout=2); sys.exit(0)" 2>/dev/null; then
