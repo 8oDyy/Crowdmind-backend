@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
@@ -35,7 +35,7 @@ class SurveyRepository:
             "seed": seed,
             "parameters": parameters,
             "created_by": created_by,
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
         }
         result = self._db.insert(self.TABLE, data)
         if not result:
@@ -89,7 +89,7 @@ class SurveyRepository:
             elapsed_seconds=row.get("elapsed_seconds"),
             started_at=self._parse_dt(row.get("started_at")),
             completed_at=self._parse_dt(row.get("completed_at")),
-            created_at=self._parse_dt(row.get("created_at")) or datetime.utcnow(),
+            created_at=self._parse_dt(row.get("created_at")) or datetime.now(UTC),
         )
 
     @staticmethod

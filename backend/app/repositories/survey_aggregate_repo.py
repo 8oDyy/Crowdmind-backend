@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
@@ -24,7 +24,7 @@ class SurveyAggregateRepository:
             "survey_id": survey_id,
             "question_id": question_id,
             "aggregation": aggregation,
-            "computed_at": datetime.utcnow().isoformat(),
+            "computed_at": datetime.now(UTC).isoformat(),
         }
         result = self._db.insert(self.TABLE, data)
         if not result:
@@ -48,7 +48,7 @@ class SurveyAggregateRepository:
             survey_id=row["survey_id"],
             question_id=row.get("question_id"),
             aggregation=row.get("aggregation", {}),
-            computed_at=self._parse_dt(row.get("computed_at")) or datetime.utcnow(),
+            computed_at=self._parse_dt(row.get("computed_at")) or datetime.now(UTC),
         )
 
     @staticmethod

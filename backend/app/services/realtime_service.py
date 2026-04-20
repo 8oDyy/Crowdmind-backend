@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import WebSocket
@@ -35,7 +35,7 @@ class RealtimeService:
             {
                 "type": event_type,
                 "data": data,
-                "ts": datetime.utcnow().isoformat(),
+                "ts": datetime.now(UTC).isoformat(),
             }
         )
 

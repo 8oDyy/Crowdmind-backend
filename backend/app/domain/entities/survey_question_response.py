@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 
 
 @dataclass
@@ -13,4 +13,4 @@ class SurveyQuestionResponse:
     short_reason: str | None = None
     raw_llm_output: str | None = None
     is_fallback: bool = False
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))

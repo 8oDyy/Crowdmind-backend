@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
@@ -31,7 +31,7 @@ class FakeSurveyRepository:
 
     def create_survey(self, **kwargs) -> Survey:
         sid = str(uuid4())
-        row = {"id": sid, "created_at": datetime.utcnow().isoformat(), **kwargs}
+        row = {"id": sid, "created_at": datetime.now(UTC).isoformat(), **kwargs}
         row.setdefault("status", "pending")
         self._store[sid] = row
         return self._to_entity(row)
@@ -84,7 +84,7 @@ class FakeAgentRepository:
         result = []
         for a in agents_data:
             a.setdefault("id", str(uuid4()))
-            a.setdefault("created_at", datetime.utcnow().isoformat())
+            a.setdefault("created_at", datetime.now(UTC).isoformat())
             self._store.append(a)
             result.append(self._to_entity(a))
         return result
@@ -155,7 +155,7 @@ class FakeSurveyAggregateRepository:
             "survey_id": survey_id,
             "question_id": question_id,
             "aggregation": aggregation,
-            "computed_at": datetime.utcnow(),
+            "computed_at": datetime.now(UTC),
         }
         self._store.append(row)
         return SurveyAggregate(**row)
