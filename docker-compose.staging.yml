@@ -1,0 +1,17 @@
+services:
+  api_staging:
+    container_name: api_staging
+    image: ghcr.io/8odyy/crowdmind-backend-api:dev
+    env_file:
+      - .env
+    expose:
+      - "8000"
+    restart: unless-stopped
+    networks:
+      - crowdmind_net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+networks:
+  crowdmind_net:
+    external: true
