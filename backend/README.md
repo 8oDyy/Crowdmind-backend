@@ -37,12 +37,6 @@ SUPABASE_SCHEMA=public
 CORS_ORIGINS=*
 LOG_LEVEL=INFO
 
-GROQ_API_KEY=your-groq-key
-GROQ_MODEL=llama-3.3-70b-versatile
-
-OLLAMA_HOST=http://localhost:11434
-OLLAMA_MODEL=llama3.2:3b
-
 PI_TIMEOUT=30.0
 PI_TOKEN=
 ```

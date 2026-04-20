@@ -23,12 +23,6 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "*"
     LOG_LEVEL: str = "INFO"
 
-    GROQ_API_KEY: str = ""
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"
-
-    OLLAMA_HOST: str = "http://localhost:11434"
-    OLLAMA_MODEL: str = "llama3.2:3b"
-
     PI_TIMEOUT: float = 30.0
     PI_TOKEN: str = ""  # Token d'auth pour le WebSocket Pi (vide = pas d'auth)
 
