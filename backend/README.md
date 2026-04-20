@@ -12,7 +12,7 @@ API FastAPI pour la simulation de sondages multi-agents avec moteur heuristique 
 
 - Python 3.11+
 - Compte Supabase (PostgreSQL)
-- Raspberry Pi accessible sur le réseau avec le serveur `api_server.py` (port 5000)
+- Raspberry Pi qui se connecte au backend via WebSocket inverse (`/api/v1/ws/pi-worker`)
 
 ## Installation
 
@@ -43,12 +43,13 @@ GROQ_MODEL=llama-3.3-70b-versatile
 OLLAMA_HOST=http://localhost:11434
 OLLAMA_MODEL=llama3.2:3b
 
-CROWDMIND_PI_URL=http://192.168.x.x:5000
 PI_TIMEOUT=30.0
+PI_TOKEN=
 ```
 
-> **Important** : `CROWDMIND_PI_URL` doit pointer vers l'adresse IP du Raspberry Pi
-> sur lequel tourne le serveur heuristique (`api_server.py`).
+> **Important** : le Pi se connecte au backend via WebSocket inverse
+> (`wss://<backend>/api/v1/ws/pi-worker`). Si `PI_TOKEN` est défini, le Pi doit
+> fournir le même token (query `?token=...` ou header `Authorization: Bearer`).
 
 ## Lancement
 

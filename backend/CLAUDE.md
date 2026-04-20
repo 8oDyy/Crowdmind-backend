@@ -55,14 +55,11 @@ API FastAPI qui orchestre des simulations de sondages multi-agents. Les calculs 
 
 ### Communication avec le Pi (important)
 
-Deux chemins, transparents pour `SurveyService` via `PiClient` :
+**Un seul chemin : WebSocket inverse.** Le Pi se connecte à `/api/v1/ws/pi-worker` (endpoint `websocket.py` → `PiWsManager`). `PiClient` route tout via `PiWsManager.call_sync` ; si aucun Pi n'est connecté, `PiClient` lève immédiatement `PiClientError` (pas de fallback HTTP).
 
-1. **WebSocket inverse** (prioritaire) : le Pi se connecte à `/api/v1/ws/pi-worker` (endpoint `websocket.py` → `PiWsManager`). Le backend envoie des tâches via `PiWsManager.call` / `call_sync` et corrèle requête ↔ réponse avec un `task_id` UUID.
-   - `PiWsManager.set_loop(asyncio.get_running_loop())` est appelé dans le `lifespan` de `main.py` — **ne pas retirer**, sinon `call_sync` (utilisé depuis les endpoints sync) ne peut pas soumettre à la boucle asyncio.
-   - Auth optionnelle via `PI_TOKEN` (query `?token=` ou header `Authorization: Bearer`).
-2. **Fallback HTTP** : `CROWDMIND_PI_URL` (utile en dev local quand le Pi est joignable en LAN).
-
-`PiClient` choisit automatiquement : si `PiWsManager.connected` → WS, sinon HTTP.
+- Corrélation requête ↔ réponse via un `task_id` UUID côté `PiWsManager`.
+- `PiWsManager.set_loop(asyncio.get_running_loop())` est appelé dans le `lifespan` de `main.py` — **ne pas retirer**, sinon `call_sync` (utilisé depuis les endpoints sync) ne peut pas soumettre à la boucle asyncio.
+- Auth optionnelle via `PI_TOKEN` (query `?token=` ou header `Authorization: Bearer`).
 
 ### Temps réel client
 
