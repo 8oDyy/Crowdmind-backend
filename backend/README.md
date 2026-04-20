@@ -1,5 +1,7 @@
 # CrowdMind Backend API v2
 
+> Voir le README.md à la racine du repo pour l'architecture globale et le déploiement.
+
 API FastAPI pour la simulation de sondages multi-agents avec moteur heuristique (Raspberry Pi).
 
 > **CrowdMind** simule des panels d'agents idéologiques virtuels qui répondent
@@ -79,7 +81,8 @@ GET /api/v1/health
 { "status": "ok", "pi_status": "ok" }
 ```
 
-> Si le Pi est injoignable, `pi_status` sera `"unreachable"` (l'API elle-même reste `"ok"`).
+> Le `pi_status` est obtenu en envoyant une tâche `health` au Pi via le WebSocket inverse.
+> Si aucun Pi n'est connecté (ou si la tâche échoue), `pi_status` sera `"unreachable"` et l'API elle-même reste `"ok"`.
 
 ---
 
@@ -416,9 +419,34 @@ Retourne les agrégations déjà calculées sans les recalculer.
 
 ---
 
-### 12. WebSocket — Suivi en temps réel
+### 12. Communication avec le Pi (WebSocket)
 
-Se connecter pour recevoir les mises à jour en temps réel pendant l'exécution d'un sondage.
+Le Pi se connecte au backend via un WebSocket inverse — c'est le seul canal de communication (pas d'appel HTTP sortant vers le Pi).
+
+**Connexion du Pi** :
+```
+WS wss://<backend>/api/v1/ws/pi-worker
+```
+
+Authentification optionnelle : si `PI_TOKEN` est configuré, le Pi doit fournir le même token via :
+- Query param : `?token=<token>`
+- Header HTTP : `Authorization: Bearer <token>`
+
+**Protocole** :
+- Le backend envoie une tâche JSON avec un `task_id` (UUID v4) unique : `{"task_id": "...", "type": "survey_text", ...}`
+- Le Pi répond avec le même `task_id` : `{"task_id": "...", "result": {...}}` ou `{"task_id": "...", "error": "..."}`
+- La corrélation requête/réponse est gérée par `PiWsManager` via un dictionnaire de `Future` en attente
+
+**Côté backend (appels synchrones)** :
+- `PiClient` (injecté dans les endpoints via `PiClientDep`) délègue tout à `PiWsManager.call_sync`
+- `call_sync` utilise `asyncio.run_coroutine_threadsafe` pour soumettre la coroutine à la boucle asyncio principale depuis un thread du pool FastAPI
+- Si aucun Pi n'est connecté, `PiClient` lève immédiatement `PiClientError`
+
+---
+
+### 13. WebSocket — Suivi en temps réel
+
+Se connecter pour recevoir les mises à jour en temps réel pendant l'exécution d'un sondage. Ce canal est indépendant du WebSocket Pi.
 
 ```
 WS wss://staging-api.crowdmind.fr/api/v1/ws/experiments/{experiment_id}
@@ -443,7 +471,7 @@ Voici le cycle de vie d'un sondage :
    ├─ Création en BDD (pending)
    ├─ Passage en running
    ├─ Génération des agents localement (même seed = mêmes profils que le Pi)
-   ├─ Appel HTTP au Pi (/api/survey/text ou /api/survey/questions)
+   ├─ Envoi de la tâche au Pi via WebSocket inverse (PiWsManager.call_sync)
    ├─ Stockage agents, réponses et agrégats en BDD
    └─ Passage en completed avec elapsed_seconds
 2. GET /surveys/{id}            → Vérifier le statut et les détails
@@ -487,10 +515,9 @@ backend/
 │   ├── domain/                 # Entités métier et enums
 │   ├── services/               # Logique métier (SurveyService)
 │   ├── repositories/           # Accès données (Supabase)
-│   ├── infrastructure/         # Clients DB, LLM (Groq, Ollama) et Pi heuristique
+│   ├── infrastructure/         # Clients DB et Pi heuristique
 │   │   ├── db/                 # Client Supabase
-│   │   ├── llm/                # Clients Groq et Ollama
-│   │   └── pi/                 # Client HTTP Pi + génération d'agents locale
+│   │   └── pi/                 # agent_generator.py, pi_client.py, pi_ws_manager.py
 │   └── tests/                  # Tests pytest
 ├── requirements.txt
 └── README.md
