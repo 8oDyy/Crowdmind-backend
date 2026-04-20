@@ -48,7 +48,12 @@ class PiWsManager:
         logger.info("Pi worker connected")
 
         try:
-            async for raw in ws:
+            while True:
+                try:
+                    raw = await ws.receive_text()
+                except WebSocketDisconnect:
+                    break
+
                 try:
                     msg = json.loads(raw)
                 except json.JSONDecodeError:

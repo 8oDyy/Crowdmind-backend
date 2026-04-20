@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
@@ -17,7 +17,7 @@ class AgentRepository:
         if "id" not in data:
             data["id"] = str(uuid4())
         if "created_at" not in data:
-            data["created_at"] = datetime.utcnow().isoformat()
+            data["created_at"] = datetime.now(UTC).isoformat()
         result = self._db.insert(self.TABLE, data)
         if not result:
             raise RepoError("Failed to create agent")
@@ -28,7 +28,7 @@ class AgentRepository:
             if "id" not in a:
                 a["id"] = str(uuid4())
             if "created_at" not in a:
-                a["created_at"] = datetime.utcnow().isoformat()
+                a["created_at"] = datetime.now(UTC).isoformat()
         result = self._db.insert(self.TABLE, agents_data)
         if not result:
             raise RepoError("Failed to create agents batch")
@@ -72,7 +72,7 @@ class AgentRepository:
             urban_rural=row["urban_rural"],
             classe_sociale=row["classe_sociale"],
             background=row["background"],
-            created_at=self._parse_dt(row.get("created_at")) or datetime.utcnow(),
+            created_at=self._parse_dt(row.get("created_at")) or datetime.now(UTC),
         )
 
     @staticmethod

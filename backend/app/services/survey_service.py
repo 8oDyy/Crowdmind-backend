@@ -1,5 +1,5 @@
 import time
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from app.core.logging import get_logger
@@ -270,7 +270,7 @@ class SurveyService:
             survey_id,
             {
                 "status": "running",
-                "started_at": datetime.utcnow().isoformat(),
+                "started_at": datetime.now(UTC).isoformat(),
             },
         )
 
@@ -284,7 +284,7 @@ class SurveyService:
             {
                 "status": "completed",
                 "elapsed_seconds": elapsed_seconds,
-                "completed_at": datetime.utcnow().isoformat(),
+                "completed_at": datetime.now(UTC).isoformat(),
             },
         )
 
@@ -293,7 +293,7 @@ class SurveyService:
             survey_id,
             {
                 "status": "failed",
-                "completed_at": datetime.utcnow().isoformat(),
+                "completed_at": datetime.now(UTC).isoformat(),
             },
         )
 

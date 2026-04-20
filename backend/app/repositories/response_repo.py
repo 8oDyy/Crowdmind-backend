@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
@@ -17,7 +17,7 @@ class ResponseRepository:
         if "id" not in data:
             data["id"] = str(uuid4())
         if "created_at" not in data:
-            data["created_at"] = datetime.utcnow().isoformat()
+            data["created_at"] = datetime.now(UTC).isoformat()
         result = self._db.insert(self.TABLE, data)
         if not result:
             raise RepoError("Failed to create response")
@@ -28,7 +28,7 @@ class ResponseRepository:
             if "id" not in r:
                 r["id"] = str(uuid4())
             if "created_at" not in r:
-                r["created_at"] = datetime.utcnow().isoformat()
+                r["created_at"] = datetime.now(UTC).isoformat()
         result = self._db.insert(self.TABLE, rows)
         if not result:
             raise RepoError("Failed to create responses batch")
@@ -68,7 +68,7 @@ class ResponseRepository:
             short_reason=row.get("short_reason"),
             raw_llm_output=row.get("raw_llm_output"),
             is_fallback=bool(row.get("is_fallback", False)),
-            created_at=self._parse_dt(row.get("created_at")) or datetime.utcnow(),
+            created_at=self._parse_dt(row.get("created_at")) or datetime.now(UTC),
         )
 
     @staticmethod

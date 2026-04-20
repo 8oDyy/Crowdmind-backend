@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
@@ -18,7 +18,7 @@ class SurveyQuestionRepository:
             if "id" not in q:
                 q["id"] = str(uuid4())
             if "created_at" not in q:
-                q["created_at"] = datetime.utcnow().isoformat()
+                q["created_at"] = datetime.now(UTC).isoformat()
         result = self._db.insert(self.TABLE, questions)
         if not result:
             raise RepoError("Failed to create survey questions")
@@ -45,7 +45,7 @@ class SurveyQuestionRepository:
             text=row["text"],
             choices=row.get("choices"),
             scale=row.get("scale"),
-            created_at=self._parse_dt(row.get("created_at")) or datetime.utcnow(),
+            created_at=self._parse_dt(row.get("created_at")) or datetime.now(UTC),
         )
 
     @staticmethod

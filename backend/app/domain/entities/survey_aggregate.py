@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 
@@ -9,4 +9,4 @@ class SurveyAggregate:
     survey_id: str
     question_id: str | None = None
     aggregation: dict[str, Any] = field(default_factory=dict)
-    computed_at: datetime = field(default_factory=datetime.utcnow)
+    computed_at: datetime = field(default_factory=lambda: datetime.now(UTC))

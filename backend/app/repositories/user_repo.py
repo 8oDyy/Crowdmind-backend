@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
@@ -22,7 +22,7 @@ class UserRepository:
             "id": str(uuid4()),
             "email": email,
             "role": role,
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
         }
         result = self._db.insert(self.TABLE, data)
         if not result:
@@ -62,4 +62,4 @@ class UserRepository:
             return value
         if isinstance(value, str):
             return datetime.fromisoformat(value.replace("Z", "+00:00"))
-        return datetime.utcnow()
+        return datetime.now(UTC)
